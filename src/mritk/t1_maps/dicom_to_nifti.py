@@ -26,9 +26,7 @@ def extract_mixed_dicom(dcmpath: Path, subvolumes: list[str]):
     frames_total = int(dcm.NumberOfFrames)
     frames_per_volume = dcm[0x2001, 0x1018].value  # [Number of Slices MR]
     num_volumes = frames_total // frames_per_volume
-    assert num_volumes * frames_per_volume == frames_total, (
-        "Subvolume dimensions do not match"
-    )
+    assert num_volumes * frames_per_volume == frames_total, "Subvolume dimensions do not match"
 
     D = dcm.pixel_array.astype(np.single)
     frame_fg_sequence = dcm.PerFrameFunctionalGroupsSequence
@@ -55,25 +53,18 @@ def extract_mixed_dicom(dcmpath: Path, subvolumes: list[str]):
 
         # Include meta-data
         description = {
-            "TR": float(
-                frame_fg.MRTimingAndRelatedParametersSequence[0].RepetitionTime
-            ),
+            "TR": float(frame_fg.MRTimingAndRelatedParametersSequence[0].RepetitionTime),
             "TE": float(frame_fg.MREchoSequence[0].EffectiveEchoTime),
         }
         if hasattr(frame_fg.MRModifierSequence[0], "InversionTimes"):
             description["TI"] = frame_fg.MRModifierSequence[0].InversionTimes[0]
         if hasattr(frame_fg.MRTimingAndRelatedParametersSequence[0], "EchoTrainLength"):
-            description["ETL"] = frame_fg.MRTimingAndRelatedParametersSequence[
-                0
-            ].EchoTrainLength
+            description["ETL"] = frame_fg.MRTimingAndRelatedParametersSequence[0].EchoTrainLength
         vols_out.append({"nifti": nii_oriented, "descrip": description})
     return vols_out
 
 
-def dicom_to_looklocker(
-    dicomfile: Path,
-    outpath: Path
-):
+def dicom_to_looklocker(dicomfile: Path, outpath: Path):
     outdir, form = outpath.parent, outpath.stem
     outdir.mkdir(exist_ok=True, parents=True)
     times = read_dicom_trigger_times(dicomfile)
@@ -87,12 +78,8 @@ def dicom_to_looklocker(
             tmppath / f"{form}.json",
             outpath.with_suffix(".json"),
         )
-        mri = load_mri_data(
-            tmppath / f"{form}.nii.gz", dtype=np.double
-        )
-        save_mri_data(
-            mri, outpath.with_suffix(".nii.gz"), dtype=np.single, intent_code=2001
-        )
+        mri = load_mri_data(tmppath / f"{form}.nii.gz", dtype=np.double)
+        save_mri_data(mri, outpath.with_suffix(".nii.gz"), dtype=np.single, intent_code=2001)
 
 
 def dicom_to_mixed(

@@ -30,7 +30,7 @@ def concentration(
     output: Optional[Path] = None,
     r1: float = 0.0045,
     mask: Optional[Path] = None,
-)-> MRIData:
+) -> MRIData:
     T1_mri = load_mri_data(input, np.single)
     T10_mri = load_mri_data(reference, np.single)
     assert_same_space(T1_mri, T10_mri)
@@ -47,9 +47,7 @@ def concentration(
         T10_mri.data[~mask_data] = np.nan
 
     concentrations = np.nan * np.zeros_like(T10_mri.data)
-    concentrations[mask_data] = concentration_from_T1(
-        T1=T1_mri.data[mask_data], T1_0=T10_mri.data[mask_data], r1=r1
-    )
+    concentrations[mask_data] = concentration_from_T1(T1=T1_mri.data[mask_data], T1_0=T10_mri.data[mask_data], r1=r1)
     mri_data = MRIData(data=concentrations, affine=T10_mri.affine)
     if output is not None:
         save_mri_data(mri_data, output, np.single)

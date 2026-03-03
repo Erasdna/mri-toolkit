@@ -26,23 +26,14 @@ from .utils import (
 )
 
 
-def looklocker_t1map(
-    t_data: np.ndarray,
-    D: np.ndarray,
-    affine: np.ndarray
-) -> MRIData:
-
+def looklocker_t1map(t_data: np.ndarray, D: np.ndarray, affine: np.ndarray) -> MRIData:
     T1_ROOF = 10000
-    assert len(D.shape) >= 4, (
-        f"data should be 4-dimensional, got data with shape {D.shape}"
-    )
+    assert len(D.shape) >= 4, f"data should be 4-dimensional, got data with shape {D.shape}"
     mask = mri_facemask(D[..., 0])
     valid_voxels = (np.nanmax(D, axis=-1) > 0) * mask
 
     D_normalized = np.nan * np.zeros_like(D)
-    D_normalized[valid_voxels] = (
-        D[valid_voxels] / np.nanmax(D, axis=-1)[valid_voxels, np.newaxis]
-    )
+    D_normalized[valid_voxels] = D[valid_voxels] / np.nanmax(D, axis=-1)[valid_voxels, np.newaxis]
     voxel_mask = np.array(np.where(valid_voxels)).T
     Dmasked = np.array([D_normalized[i, j, k] for (i, j, k) in voxel_mask])
 
@@ -79,15 +70,9 @@ def looklocker_t1map_postprocessing(
         regions = skimage.measure.regionprops(mask)
         regions.sort(key=lambda x: x.num_pixels, reverse=True)
         mask = mask == regions[0].label
-        skimage.morphology.remove_small_holes(
-            mask, 10 ** (mask.ndim), connectivity=2, out=mask
-        )
-        skimage.morphology.binary_dilation(
-            mask, skimage.morphology.ball(radius), out=mask
-        )
-        skimage.morphology.binary_erosion(
-            mask, skimage.morphology.ball(erode_dilate_factor * radius), out=mask
-        )
+        skimage.morphology.remove_small_holes(mask, 10 ** (mask.ndim), connectivity=2, out=mask)
+        skimage.morphology.binary_dilation(mask, skimage.morphology.ball(radius), out=mask)
+        skimage.morphology.binary_erosion(mask, skimage.morphology.ball(erode_dilate_factor * radius), out=mask)
 
     # Remove non-zero artifacts outside of the mask.
     surface_vox = np.isfinite(T1map) * (~mask)
@@ -99,9 +84,7 @@ def looklocker_t1map_postprocessing(
     print("Removing", outliers.sum(), f"voxels outside the range ({T1_lo}, {T1_hi}).")
     T1map[outliers] = np.nan
     if np.isfinite(T1map).sum() / T1map.size < 0.01:
-        raise RuntimeError(
-            "After outlier removal, less than 1% of the image is left. Check image units."
-        )
+        raise RuntimeError("After outlier removal, less than 1% of the image is left. Check image units.")
 
     # Fill internallly missing values
     fill_mask = np.isnan(T1map) * mask
@@ -130,9 +113,7 @@ def mixed_t1map(
 
     TR_se, TI, TE, ETL = meta["TR_SE"], meta["TI"], meta["TE"], meta["ETL"]
     F, T1_grid = T1_lookup_table(TR_se, TI, TE, ETL, T1_low, T1_hi)
-    interpolator = scipy.interpolate.interp1d(
-        F, T1_grid, kind="nearest", bounds_error=False, fill_value=np.nan
-    )
+    interpolator = scipy.interpolate.interp1d(F, T1_grid, kind="nearest", bounds_error=False, fill_value=np.nan)
     T1_volume = interpolator(F_data).astype(np.single)
     nii = nibabel.nifti1.Nifti1Image(T1_volume, IR.affine)
     nii.set_sform(nii.affine, "scanner")
@@ -140,11 +121,7 @@ def mixed_t1map(
     return nii
 
 
-def mixed_t1map_postprocessing(
-    se: Path,
-    t1: Path,
-    output: Path
-):
+def mixed_t1map_postprocessing(se: Path, t1: Path, output: Path):
     T1map_nii = nibabel.nifti1.load(t1)
 
     SE_mri = load_mri_data(se, np.single)
@@ -153,9 +130,7 @@ def mixed_t1map_postprocessing(
 
     masked_T1map = T1map_nii.get_fdata(dtype=np.single)
     masked_T1map[~mask] = np.nan
-    masked_T1map_nii = nibabel.nifti1.Nifti1Image(
-        masked_T1map, T1map_nii.affine, T1map_nii.header
-    )
+    masked_T1map_nii = nibabel.nifti1.Nifti1Image(masked_T1map, T1map_nii.affine, T1map_nii.header)
     nibabel.nifti1.save(masked_T1map_nii, output)
 
 
@@ -174,9 +149,7 @@ def hybrid_t1_map(
     csf_mask_mri = nibabel.nifti1.load(csf_mask_path)
     csf_mask = csf_mask_mri.get_fdata().astype(bool)
     if erode > 0:
-        csf_mask = skimage.morphology.binary_erosion(
-            csf_mask, skimage.morphology.ball(erode)
-        )
+        csf_mask = skimage.morphology.binary_erosion(csf_mask, skimage.morphology.ball(erode))
 
     hybrid = ll
     newmask = csf_mask * (ll > threshold) * (mixed > threshold)

@@ -8,6 +8,7 @@ Copyright (C) 2026   Simula Research Laboratory
 import numpy as np
 import skimage
 
+
 def largest_island(mask: np.ndarray, connectivity: int = 1) -> np.ndarray:
     newmask = skimage.measure.label(mask, connectivity=connectivity)
     regions = skimage.measure.regionprops(newmask)

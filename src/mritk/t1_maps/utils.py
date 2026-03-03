@@ -5,9 +5,7 @@ Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 Copyright (C) 2026   Simula Research Laboratory
 """
 
-from pathlib import Path
 import numpy as np
-import nibabel
 import logging
 import scipy as sp
 import skimage
@@ -34,8 +32,7 @@ def read_dicom_trigger_times(dicomfile):
 
     dcm = pydicom.dcmread(dicomfile)
     all_frame_times = [
-        f.CardiacSynchronizationSequence[0].NominalCardiacTriggerDelayTime
-        for f in dcm.PerFrameFunctionalGroupsSequence
+        f.CardiacSynchronizationSequence[0].NominalCardiacTriggerDelayTime for f in dcm.PerFrameFunctionalGroupsSequence
     ]
     return np.unique(all_frame_times)
 
@@ -109,7 +106,7 @@ def curve_fit_wrapper(f, t, y, p0):
         warnings.simplefilter("error", OptimizeWarning)
         popt, _ = sp.optimize.curve_fit(f, xdata=t, ydata=y, p0=p0, maxfev=1000)
     return popt
- 
+
 
 def fit_voxel(time_s: np.ndarray, pbar, m: np.ndarray) -> np.ndarray:
     if pbar is not None:
@@ -132,9 +129,7 @@ def fit_voxel(time_s: np.ndarray, pbar, m: np.ndarray) -> np.ndarray:
     return popt
 
 
-def nan_filter_gaussian(
-    U: np.ndarray, sigma: float, truncate: float = 4.0
-) -> np.ndarray:
+def nan_filter_gaussian(U: np.ndarray, sigma: float, truncate: float = 4.0) -> np.ndarray:
     V = U.copy()
     V[np.isnan(U)] = 0
     VV = sp.ndimage.gaussian_filter(V, sigma=sigma, truncate=truncate)
@@ -154,9 +149,7 @@ def estimate_se_free_relaxation_time(TRse, TE, ETL):
     return TRse - TE * (1 + 0.5 * (ETL - 1) / (0.5 * (ETL + 1) + 20))
 
 
-def T1_lookup_table(
-    TRse: float, TI: float, TE: float, ETL: int, T1_low: float, T1_hi: float
-) -> tuple[np.ndarray, np.ndarray]:
+def T1_lookup_table(TRse: float, TI: float, TE: float, ETL: int, T1_low: float, T1_hi: float) -> tuple[np.ndarray, np.ndarray]:
     TRfree = estimate_se_free_relaxation_time(TRse, TE, ETL)
     T1_grid = np.arange(int(T1_low), int(T1_hi + 1))
     Sse = 1 - np.exp(-TRfree / T1_grid)

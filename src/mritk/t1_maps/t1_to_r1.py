@@ -21,9 +21,7 @@ def convert_T1_to_R1(
 ) -> MRIData:
     valid_t1 = (t1_low <= T1map_mri.data) * (T1map_mri.data <= t1_high)
     R1map = np.nan * np.zeros_like(T1map_mri.data)
-    R1map[valid_t1] = scale / np.minimum(
-        t1_high, np.maximum(t1_low, T1map_mri.data[valid_t1])
-    )
+    R1map[valid_t1] = scale / np.minimum(t1_high, np.maximum(t1_low, T1map_mri.data[valid_t1]))
 
     R1map_mri = MRIData(data=R1map, affine=T1map_mri.affine)
     return R1map_mri
@@ -45,9 +43,7 @@ def T1_to_R1(
 
     valid_t1 = (t1_low <= T1map_mri.data) * (T1map_mri.data <= t1_high)
     R1map = np.nan * np.zeros_like(T1map_mri.data)
-    R1map[valid_t1] = scale / np.minimum(
-        t1_high, np.maximum(t1_low, T1map_mri.data[valid_t1])
-    )
+    R1map[valid_t1] = scale / np.minimum(t1_high, np.maximum(t1_low, T1map_mri.data[valid_t1]))
 
     R1map_mri = MRIData(data=R1map, affine=T1map_mri.affine)
 

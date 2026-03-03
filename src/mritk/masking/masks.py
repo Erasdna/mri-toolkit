@@ -27,9 +27,7 @@ def create_csf_mask(
         binary = vol > thresh
         binary = largest_island(binary, connectivity=connectivity)
     else:
-        (hist, bins) = np.histogram(
-            vol[(vol > 0) * (vol < np.quantile(vol, 0.999))], bins=512
-        )
+        (hist, bins) = np.histogram(vol[(vol > 0) * (vol < np.quantile(vol, 0.999))], bins=512)
         thresh = skimage.filters.threshold_yen(hist=(hist, bins))
         binary = vol > thresh
         binary = largest_island(binary, connectivity=connectivity)
@@ -51,19 +49,13 @@ def csf_mask(
     return mri_data
 
 
-
-def create_intracranial_mask(
-    csf_mask: MRIData,
-    segmentation: MRIData
-) -> np.ndarray:
+def create_intracranial_mask(csf_mask: MRIData, segmentation: MRIData) -> np.ndarray:
     assert_same_space(csf_mask, segmentation)
     combined_mask = csf_mask.data + segmentation.data.astype(bool)
     background_mask = largest_island(~combined_mask, connectivity=1)
-    opened = skimage.morphology.binary_opening(
-        background_mask, skimage.morphology.ball(3)
-    )
+    opened = skimage.morphology.binary_opening(background_mask, skimage.morphology.ball(3))
     return ~opened
-    #return MRIData(data=~opened, affine=segmentation.affine)
+    # return MRIData(data=~opened, affine=segmentation.affine)
 
 
 def intracranial_mask(
