@@ -16,7 +16,7 @@ import json
 import scipy
 
 from ..data.base import MRIData
-from ..data.io import load_mri_data
+from ..data.io import load_mri_data, save_mri_data
 from ..masking.masks import create_csf_mask
 from .utils import (
     mri_facemask,
@@ -26,7 +26,17 @@ from .utils import (
 )
 
 
-def looklocker_t1map(t_data: np.ndarray, D: np.ndarray, affine: np.ndarray) -> MRIData:
+def looklocker_t1map(
+    looklocker_input: Path,
+    timestamps: Path, 
+    output: Path = None
+) -> MRIData:
+
+    LL_mri = load_mri_data(looklocker_input, dtype=np.single)
+    D = LL_mri.data
+    affine = LL_mri.affine
+    t_data = np.loadtxt(timestamps) / 1000
+
     T1_ROOF = 10000
     assert len(D.shape) >= 4, f"data should be 4-dimensional, got data with shape {D.shape}"
     mask = mri_facemask(D[..., 0])
@@ -52,7 +62,11 @@ def looklocker_t1map(t_data: np.ndarray, D: np.ndarray, affine: np.ndarray) -> M
     T1map = np.nan * np.zeros_like(D[..., 0])
     T1map[I, J, K] = (x2 / x3) ** 2 * 1000.0  # convert to ms
     T1map = np.minimum(T1map, T1_ROOF)
-    return MRIData(T1map.astype(np.single), affine)
+    T1map_mri = MRIData(T1map.astype(np.single), affine)
+    if output is not None:
+        save_mri_data(T1map_mri, output, dtype=np.single)
+
+    return T1map_mri
 
 
 def looklocker_t1map_postprocessing(
@@ -134,7 +148,7 @@ def mixed_t1map_postprocessing(se: Path, t1: Path, output: Path):
     nibabel.nifti1.save(masked_T1map_nii, output)
 
 
-def hybrid_t1_map(
+def hybrid_t1map(
     ll_path: Path,
     mixed_path: Path,
     csf_mask_path: Path,
