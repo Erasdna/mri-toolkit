@@ -210,4 +210,3 @@ def assert_same_space(mri1: MRIData, mri2: MRIData, rtol: float = 1e-5):
         )
 
         raise ValueError(msg)
-

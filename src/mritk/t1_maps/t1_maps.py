@@ -26,12 +26,7 @@ from .utils import (
 )
 
 
-def looklocker_t1map(
-    looklocker_input: Path,
-    timestamps: Path, 
-    output: Path = None
-) -> MRIData:
-
+def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path = None) -> MRIData:
     LL_mri = load_mri_data(looklocker_input, dtype=np.single)
     D = LL_mri.data
     affine = LL_mri.affine
