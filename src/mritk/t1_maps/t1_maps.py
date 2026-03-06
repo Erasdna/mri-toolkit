@@ -82,7 +82,7 @@ def looklocker_t1map_postprocessing(
         mask = mask == regions[0].label
         skimage.morphology.remove_small_holes(mask, 10 ** (mask.ndim), connectivity=2, out=mask)
         skimage.morphology.binary_dilation(mask, skimage.morphology.ball(radius), out=mask)
-        skimage.morphology.binary_erosion(mask, skimage.morphology.ball(erode_dilate_factor * radius), out=mask)
+        skimage.morphology.erosion(mask, skimage.morphology.ball(erode_dilate_factor * radius), out=mask)
 
     # Remove non-zero artifacts outside of the mask.
     surface_vox = np.isfinite(T1map) * (~mask)
@@ -144,7 +144,7 @@ def mixed_t1map_postprocessing(SE_nii_path: Path, T1_path: Path, output: Path = 
 
     SE_mri = load_mri_data(SE_nii_path, np.single)
     mask = create_csf_mask(SE_mri.data, use_li=True)
-    mask = skimage.morphology.binary_erosion(mask)
+    mask = skimage.morphology.erosion(mask)
 
     masked_T1map = T1map_nii.get_fdata(dtype=np.single)
     masked_T1map[~mask] = np.nan
@@ -167,7 +167,7 @@ def hybrid_t1map(
     csf_mask_mri = nibabel.nifti1.load(csf_mask_path)
     csf_mask = csf_mask_mri.get_fdata().astype(bool)
     if erode > 0:
-        csf_mask = skimage.morphology.binary_erosion(csf_mask, skimage.morphology.ball(erode))
+        csf_mask = skimage.morphology.erosion(csf_mask, skimage.morphology.ball(erode))
 
     hybrid = ll
     newmask = csf_mask * (ll > threshold) * (mixed > threshold)
