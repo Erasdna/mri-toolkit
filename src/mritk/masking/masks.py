@@ -38,7 +38,7 @@ def csf_mask(
     input: Path,
     connectivity: Optional[int] = 2,
     use_li: bool = False,
-    output: Path = None,
+    output: Path | None = None,
 ) -> MRIData:
     input_vol = load_mri_data(input, dtype=np.single)
     mask = create_csf_mask(input_vol.data, connectivity, use_li)

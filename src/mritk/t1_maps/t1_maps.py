@@ -26,7 +26,7 @@ from .utils import (
 )
 
 
-def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path = None) -> MRIData:
+def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path | None = None) -> MRIData:
     LL_mri = load_mri_data(looklocker_input, dtype=np.single)
     D = LL_mri.data
     affine = LL_mri.affine
@@ -47,7 +47,7 @@ def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path = No
         vfunc = np.vectorize(voxel_fitter, signature="(n) -> (3)")
         fitted_coefficients = vfunc(Dmasked)
 
-    x1, x2, x3 = (
+    _, x2, x3 = (
         fitted_coefficients[:, 0],
         fitted_coefficients[:, 1],
         fitted_coefficients[:, 2],
@@ -71,13 +71,13 @@ def looklocker_t1map_postprocessing(
     radius: int = 10,
     erode_dilate_factor: float = 1.3,
     mask: Optional[np.ndarray] = None,
-    output: Path = None,
+    output: Path | None = None,
 ) -> MRIData:
     T1map_mri = load_mri_data(T1map, dtype=np.single)
-    T1map = T1map_mri.data.copy()
+    T1map_data = T1map_mri.data.copy()
     if mask is None:
         # Create mask for largest island.
-        mask = skimage.measure.label(np.isfinite(T1map))
+        mask = skimage.measure.label(np.isfinite(T1map_data))
         regions = skimage.measure.regionprops(mask)
         regions.sort(key=lambda x: x.num_pixels, reverse=True)
         mask = mask == regions[0].label
@@ -86,25 +86,25 @@ def looklocker_t1map_postprocessing(
         skimage.morphology.erosion(mask, skimage.morphology.ball(erode_dilate_factor * radius), out=mask)
 
     # Remove non-zero artifacts outside of the mask.
-    surface_vox = np.isfinite(T1map) * (~mask)
+    surface_vox = np.isfinite(T1map_data) * (~mask)
     print(f"Removing {surface_vox.sum()} voxels outside of the head mask")
-    T1map[~mask] = np.nan
+    T1map_data[~mask] = np.nan
 
     # Remove outliers within the mask.
-    outliers = np.logical_or(T1map < T1_low, T1_high < T1map)
+    outliers = np.logical_or(T1map_data < T1_low, T1_high < T1map_data)
     print("Removing", outliers.sum(), f"voxels outside the range ({T1_low}, {T1_high}).")
-    T1map[outliers] = np.nan
-    if np.isfinite(T1map).sum() / T1map.size < 0.01:
+    T1map_data[outliers] = np.nan
+    if np.isfinite(T1map_data).sum() / T1map_data.size < 0.01:
         raise RuntimeError("After outlier removal, less than 1% of the image is left. Check image units.")
 
     # Fill internallly missing values
-    fill_mask = np.isnan(T1map) * mask
+    fill_mask = np.isnan(T1map_data) * mask
     while fill_mask.sum() > 0:
         print(f"Filling in {fill_mask.sum()} voxels within the mask.")
-        T1map[fill_mask] = nan_filter_gaussian(T1map, 1.0)[fill_mask]
-        fill_mask = np.isnan(T1map) * mask
+        T1map_data[fill_mask] = nan_filter_gaussian(T1map_data, 1.0)[fill_mask]
+        fill_mask = np.isnan(T1map_data) * mask
 
-    processed_T1map = MRIData(T1map, T1map_mri.affine)
+    processed_T1map = MRIData(T1map_data, T1map_mri.affine)
     if output is not None:
         save_mri_data(processed_T1map, output, dtype=np.single)
 
@@ -112,7 +112,7 @@ def looklocker_t1map_postprocessing(
 
 
 def mixed_t1map(
-    SE_nii_path: Path, IR_nii_path: Path, meta_path: Path, T1_low: float, T1_high: float, output: Path = None
+    SE_nii_path: Path, IR_nii_path: Path, meta_path: Path, T1_low: float, T1_high: float, output: Path | None = None
 ) -> nibabel.nifti1.Nifti1Image:
     SE = load_mri_data(SE_nii_path, dtype=np.single)
     IR = load_mri_data(IR_nii_path, dtype=np.single)
@@ -137,7 +137,7 @@ def mixed_t1map(
     return nii
 
 
-def mixed_t1map_postprocessing(SE_nii_path: Path, T1_path: Path, output: Path = None) -> nibabel.nifti1.Nifti1Image:
+def mixed_t1map_postprocessing(SE_nii_path: Path, T1_path: Path, output: Path | None = None) -> nibabel.nifti1.Nifti1Image:
     T1map_nii = nibabel.nifti1.load(T1_path)
 
     SE_mri = load_mri_data(SE_nii_path, np.single)
@@ -155,7 +155,7 @@ def mixed_t1map_postprocessing(SE_nii_path: Path, T1_path: Path, output: Path = 
 
 
 def hybrid_t1map(
-    LL_path: Path, mixed_path: Path, csf_mask_path: Path, threshold: float, erode: int = 0, output: Path = None
+    LL_path: Path, mixed_path: Path, csf_mask_path: Path, threshold: float, erode: int = 0, output: Path | None = None
 ) -> nibabel.nifti1.Nifti1Image:
     mixed_mri = nibabel.nifti1.load(mixed_path)
     mixed = mixed_mri.get_fdata()
