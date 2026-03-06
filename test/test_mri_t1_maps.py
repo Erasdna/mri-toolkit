@@ -42,7 +42,7 @@ def test_mixed_t1map(tmp_path, mri_data_dir: Path):
     IR_path = mri_data_dir / "mri-dataset/mri_dataset/sub-01" / "ses-01/mixed/sub-01_ses-01_acq-mixed_IR-corrected-real.nii.gz"
     meta_path = mri_data_dir / "mri-dataset/mri_dataset/sub-01" / "ses-01/mixed/sub-01_ses-01_acq-mixed_meta.json"
 
-    ref_output = mri_data_dir / "mri-dataset/mri_dataset/derivatives/sub-01" / "ses-01/sub-01_ses-01_acq-mixed_T1map.nii.gz"
+    ref_output = mri_data_dir / "mri-processed/mri_dataset/derivatives/sub-01" / "ses-01/sub-01_ses-01_acq-mixed_T1map.nii.gz"
     test_output_raw = tmp_path / "output_acq-mixed_T1map_raw.nii.gz"
     test_output = tmp_path / "output_acq-mixed_T1map.nii.gz"
 
