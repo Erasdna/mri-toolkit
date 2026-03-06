@@ -1,9 +1,9 @@
-"""T1 Maps generation module
+# T1 Maps generation module
 
-Copyright (C) 2026   Jørgen Riseth (jnriseth@gmail.com)
-Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
-Copyright (C) 2026   Simula Research Laboratory
-"""
+# Copyright (C) 2026   Jørgen Riseth (jnriseth@gmail.com)
+# Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
+# Copyright (C) 2026   Simula Research Laboratory
+
 
 import json
 import logging
@@ -70,21 +70,6 @@ def compute_looklocker_t1_array(data: np.ndarray, time_s: np.ndarray, t1_roof: f
     t1map[i, j, k] = (x2 / x3) ** 2 * 1000.0
 
     return np.minimum(t1map, t1_roof)
-
-
-def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path | None = None) -> MRIData:
-    """I/O wrapper to generate a Look-Locker T1 map from a NIfTI file."""
-    ll_mri = load_mri_data(looklocker_input, dtype=np.single)
-    # Convert timestamps from milliseconds to seconds
-    time_s = np.loadtxt(timestamps) / 1000.0
-
-    t1map_array = compute_looklocker_t1_array(ll_mri.data, time_s)
-    t1map_mri = MRIData(t1map_array.astype(np.single), ll_mri.affine)
-
-    if output is not None:
-        save_mri_data(t1map_mri, output, dtype=np.single)
-
-    return t1map_mri
 
 
 def create_largest_island_mask(data: np.ndarray, radius: int = 10, erode_dilate_factor: float = 1.3) -> np.ndarray:
@@ -172,39 +157,13 @@ def looklocker_t1map_postprocessing(
     return processed_T1map
 
 
-def compute_mixed_t1_array(se_data: np.ndarray, ir_data: np.ndarray, meta: dict, t1_low: float, t1_high: float) -> np.ndarray:
-    """
-    Computes a Mixed T1 array from Spin-Echo and Inversion-Recovery volumes using a lookup table.
-
-    Args:
-        se_data (np.ndarray): 3D numpy array of the Spin-Echo modulus data.
-        ir_data (np.ndarray): 3D numpy array of the Inversion-Recovery corrected real data.
-        meta (dict): Dictionary containing sequence parameters ('TR_SE', 'TI', 'TE', 'ETL').
-        t1_low (float): Lower bound for T1 generation grid.
-        t1_high (float): Upper bound for T1 generation grid.
-
-    Returns:
-        np.ndarray: Computed T1 map as a 3D float32 array.
-    """
-    nonzero_mask = se_data != 0
-    f_data = np.nan * np.zeros_like(ir_data)
-    f_data[nonzero_mask] = ir_data[nonzero_mask] / se_data[nonzero_mask]
-
-    tr_se, ti, te, etl = meta["TR_SE"], meta["TI"], meta["TE"], meta["ETL"]
-    f_curve, t1_grid = T1_lookup_table(tr_se, ti, te, etl, t1_low, t1_high)
-
-    interpolator = scipy.interpolate.interp1d(f_curve, t1_grid, kind="nearest", bounds_error=False, fill_value=np.nan)
-    return interpolator(f_data).astype(np.single)
-
-
 def mixed_t1map(
     SE_nii_path: Path, IR_nii_path: Path, meta_path: Path, T1_low: float, T1_high: float, output: Path | None = None
 ) -> nibabel.nifti1.Nifti1Image:
     """I/O wrapper to generate a T1 map from SE and IR acquisitions."""
     se_mri = load_mri_data(SE_nii_path, dtype=np.single)
     ir_mri = load_mri_data(IR_nii_path, dtype=np.single)
-    with open(meta_path, "r") as f:
-        meta = json.load(f)
+    meta = json.loads(meta_path.read_text())
 
     t1_volume = compute_mixed_t1_array(se_mri.data, ir_mri.data, meta, T1_low, T1_high)
 
@@ -234,6 +193,46 @@ def mixed_t1map_postprocessing(SE_nii_path: Path, T1_path: Path, output: Path | 
         nibabel.nifti1.save(masked_t1map_nii, output)
 
     return masked_t1map_nii
+
+
+def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path | None = None) -> MRIData:
+    """I/O wrapper to generate a Look-Locker T1 map from a NIfTI file."""
+    ll_mri = load_mri_data(looklocker_input, dtype=np.single)
+    # Convert timestamps from milliseconds to seconds
+    time_s = np.loadtxt(timestamps) / 1000.0
+
+    t1map_array = compute_looklocker_t1_array(ll_mri.data, time_s)
+    t1map_mri = MRIData(t1map_array.astype(np.single), ll_mri.affine)
+
+    if output is not None:
+        save_mri_data(t1map_mri, output, dtype=np.single)
+
+    return t1map_mri
+
+
+def compute_mixed_t1_array(se_data: np.ndarray, ir_data: np.ndarray, meta: dict, t1_low: float, t1_high: float) -> np.ndarray:
+    """
+    Computes a Mixed T1 array from Spin-Echo and Inversion-Recovery volumes using a lookup table.
+
+    Args:
+        se_data (np.ndarray): 3D numpy array of the Spin-Echo modulus data.
+        ir_data (np.ndarray): 3D numpy array of the Inversion-Recovery corrected real data.
+        meta (dict): Dictionary containing sequence parameters ('TR_SE', 'TI', 'TE', 'ETL').
+        t1_low (float): Lower bound for T1 generation grid.
+        t1_high (float): Upper bound for T1 generation grid.
+
+    Returns:
+        np.ndarray: Computed T1 map as a 3D float32 array.
+    """
+    nonzero_mask = se_data != 0
+    f_data = np.nan * np.zeros_like(ir_data)
+    f_data[nonzero_mask] = ir_data[nonzero_mask] / se_data[nonzero_mask]
+
+    tr_se, ti, te, etl = meta["TR_SE"], meta["TI"], meta["TE"], meta["ETL"]
+    f_curve, t1_grid = T1_lookup_table(tr_se, ti, te, etl, t1_low, t1_high)
+
+    interpolator = scipy.interpolate.interp1d(f_curve, t1_grid, kind="nearest", bounds_error=False, fill_value=np.nan)
+    return interpolator(f_data).astype(np.single)
 
 
 def compute_hybrid_t1_array(ll_data: np.ndarray, mixed_data: np.ndarray, mask: np.ndarray, threshold: float) -> np.ndarray:
