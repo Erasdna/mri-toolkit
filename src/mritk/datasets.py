@@ -35,7 +35,7 @@ def get_datasets() -> dict[str, Dataset]:
             name="Test Data",
             description="A small test dataset for testing functionality (based on the Gonzo dataset).",
             license="CC-BY-4.0",
-            links={"mritk-test-data.zip": download_link_google_drive("1Rx-DnT3fBq-3S-0DXgr0ajkANYk8v_dZ")},
+            links={"mritk-test-data.zip": download_link_google_drive("1CSj3CHd4ztcU4Aqdlw9K2OWjPi5u75bd")},
         ),
         "gonzo": Dataset(
             name="The Gonzo Dataset",
