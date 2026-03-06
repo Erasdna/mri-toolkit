@@ -107,8 +107,11 @@ def create_largest_island_mask(data: np.ndarray, radius: int = 10, erode_dilate_
 
     regions.sort(key=lambda x: x.num_pixels, reverse=True)
     mask = mask == regions[0].label
-
-    skimage.morphology.remove_small_holes(mask, max_size=10 ** (mask.ndim), connectivity=2, out=mask)
+    try:
+        skimage.morphology.remove_small_holes(mask, max_size=10 ** (mask.ndim), connectivity=2, out=mask)
+    except TypeError:
+        # Older versions of skimage use area_threshold instead of max_size
+        skimage.morphology.remove_small_holes(mask, area_threshold=10 ** (mask.ndim), connectivity=2, out=mask)
     skimage.morphology.dilation(mask, skimage.morphology.ball(radius), out=mask)
     skimage.morphology.erosion(mask, skimage.morphology.ball(erode_dilate_factor * radius), out=mask)
     return mask
