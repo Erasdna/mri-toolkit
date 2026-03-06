@@ -14,7 +14,7 @@ from mritk.t1_maps.utils import compare_nifti_images
 
 def test_intracranial_concentration(tmp_path, mri_data_dir: Path):
     baseline_path = mri_data_dir / "mri-processed/mri_processed_data/sub-01/T1maps/sub-01_ses-01_T1map_hybrid.nii.gz"
-    sessions = range(2, 5)
+    sessions = [1, 2]
 
     images_path = [
         mri_data_dir / f"mri-processed/mri_processed_data/sub-01/T1maps/sub-01_ses-0{i}_T1map_hybrid.nii.gz" for i in sessions

@@ -29,7 +29,7 @@ def convert_T1_to_R1(
 
 def T1_to_R1(
     input_mri: Union[Path, MRIData],
-    output: Path = None,
+    output: Path | None = None,
     scale: float = 1000,
     t1_low: float = 1,
     t1_high: float = float("inf"),
