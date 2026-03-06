@@ -33,4 +33,4 @@ def test_intracranial_concentration(tmp_path, mri_data_dir: Path):
 
     for i, s in enumerate(sessions):
         concentration(input=images_path[i], reference=baseline_path, output=test_outputs[i], r1=r1, mask=mask_path)
-        compare_nifti_images(test_outputs[i], ref_outputs[i], data_tolerance=1e-4)
+        compare_nifti_images(test_outputs[i], ref_outputs[i], data_tolerance=1e-12)
