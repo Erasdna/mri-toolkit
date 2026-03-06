@@ -174,7 +174,6 @@ def compare_nifti_images(img_path1, img_path2, data_tolerance=0.0):
 
     Returns:
         bool: True if images are considered the same, False otherwise.
-        list: A list of differences found.
     """
     if not os.path.exists(img_path1):
         return False, [f"File not found: {img_path1}"]
@@ -183,7 +182,6 @@ def compare_nifti_images(img_path1, img_path2, data_tolerance=0.0):
 
     img1 = nibabel.load(img_path1)
     img2 = nibabel.load(img_path2)
-    differences = []
 
     # 1. Compare Image Data
     data1 = img1.get_fdata()
@@ -199,6 +197,4 @@ def compare_nifti_images(img_path1, img_path2, data_tolerance=0.0):
     assert data_equal, f"Data mismatch (mean absolute deviation: {deviation:.4f})"
 
     # Overall result
-    is_same = not differences
-    assert False
-    return is_same, differences
+    return data_equal
