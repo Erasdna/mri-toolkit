@@ -1,4 +1,4 @@
-# MRI DICOM to NIfTI conversion - utils
+# utils.py - Utility functions for T1 mapping and related processing.
 
 # Copyright (C) 2026   Jørgen Riseth (jnriseth@gmail.com)
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
