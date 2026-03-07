@@ -14,7 +14,6 @@ import skimage
 import warnings
 import logging
 from scipy.optimize import OptimizeWarning
-import nibabel
 
 
 VOLUME_LABELS = [
@@ -88,7 +87,7 @@ def curve_fit_wrapper(f, t: np.ndarray, y: np.ndarray, p0: np.ndarray):
 
     Returns:
         np.ndarray: Optimal values for the parameters so that the sum of
-        the squared residuals of f(xdata, *popt) - ydata is minimized.
+        the squared residuals of :code:`f(xdata, *popt) - ydata` is minimized.
     """
     with warnings.catch_warnings():
         warnings.simplefilter("error", OptimizeWarning)
@@ -210,64 +209,6 @@ def T1_lookup_table(TRse: float, TI: float, TE: float, ETL: int, T1_low: float, 
     Sir = 1 - (1 + Sse) * np.exp(-TI / T1_grid)
     fractionCurve = Sir / Sse
     return fractionCurve, T1_grid
-
-
-def compare_nifti_images(img_path1: Path, img_path2: Path, data_tolerance: float = 0.0) -> bool:
-    """
-    Compares two NIfTI images for equality of data arrays.
-
-    Provides a robust way to check if two NIfTI files contain identical
-    voxel data, accounting for potential NaNs and floating-point inaccuracies.
-
-    Args:
-        img_path1 (Path): Path to the first NIfTI file.
-        img_path2 (Path): Path to the second NIfTI file.
-        data_tolerance (float, optional): Absolute tolerance for floating-point
-            comparisons. Use 0.0 for exact mathematical equality. Defaults to 0.0.
-
-    Returns:
-        bool: True if images are considered the same, False otherwise.
-
-    Raises:
-        AssertionError: If files exist but the data deviates beyond `data_tolerance`.
-        FileNotFoundError: If either of the provided file paths does not exist.
-    """
-    if not img_path1.exists():
-        raise FileNotFoundError(f"File not found: {img_path1}")
-    if not img_path2.exists():
-        raise FileNotFoundError(f"File not found: {img_path2}")
-
-    img1 = nibabel.load(img_path1)
-    img2 = nibabel.load(img_path2)
-
-    # 1. Compare Image Data
-    data1 = img1.get_fdata()
-    data2 = img2.get_fdata()
-
-    return compare_nifti_arrays(data1, data2, data_tolerance)
-
-
-def compare_nifti_arrays(arr1: np.ndarray, arr2: np.ndarray, data_tolerance: float = 0.0) -> bool:
-    """
-    Compares two NIfTI data arrays for equality, accounting for NaNs and tolerance.
-
-    Args:
-        arr1 (np.ndarray): The first data array to compare.
-        arr2 (np.ndarray): The second data array to compare.
-        data_tolerance (float, optional): Absolute tolerance for floating-point
-            comparisons. Use 0.0 for exact mathematical equality. Defaults to 0.0.
-
-    Returns:
-        bool: True if arrays are considered the same, False otherwise.
-    """
-    # Convert NaN to zero (can have NaNs in concentration maps)
-    arr1 = np.nan_to_num(arr1, nan=0.0)
-    arr2 = np.nan_to_num(arr2, nan=0.0)
-
-    if data_tolerance > 0:
-        return np.allclose(arr1, arr2, atol=data_tolerance)
-    else:
-        return np.array_equal(arr1, arr2)
 
 
 def run_dcm2niix(input_path: Path, output_dir: Path, form: str, extra_args: str = "", check: bool = True):

@@ -39,6 +39,42 @@ show
     :members:
     :inherited-members:
 
+concentration
+-------------
+
+.. automodule:: mritk.concentration
+    :members:
+    :inherited-members:
+
+mixed
+-----
+
+.. automodule:: mritk.mixed
+    :members:
+    :inherited-members:
+
+looklocker
+----------
+
+.. automodule:: mritk.looklocker
+    :members:
+    :inherited-members:
+
+utils
+-----
+
+.. automodule:: mritk.utils
+    :members:
+    :inherited-members:
+
+hybrid
+------
+
+.. automodule:: mritk.hybrid
+    :members:
+    :inherited-members:
+
+
 
 statistics
 ----------
@@ -67,19 +103,6 @@ data
     :members:
     :inherited-members:
 
-.. automodule:: mritk.data.io
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.data.orientation
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.data.base
-    :members:
-    :inherited-members:
-
-
 segmentation
 ------------
 
@@ -92,32 +115,5 @@ segmentation
     :inherited-members:
 
 .. automodule:: mritk.segmentation.lookup_table
-    :members:
-    :inherited-members:
-
-t1
---
-
-.. automodule:: mritk.t1
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.t1.concentration
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.t1.mixed
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.t1.looklocker
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.t1.utils
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.t1.hybrid
     :members:
     :inherited-members:

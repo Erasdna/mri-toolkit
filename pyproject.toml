@@ -57,8 +57,9 @@ docs = [
     "linkify-it-py",
     "sphinx-design",
     "sphinx-book-theme",
-    "myst-parser",
+    "myst-nb",
     "sphinx-multitoc-numbering",
+    "sphinxcontrib-mermaid",
 ]
 all = ["mritk[extra,test,pypi,show,napari]"]
 

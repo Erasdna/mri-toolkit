@@ -147,15 +147,6 @@ def looklocker_t1map_postprocessing(
     """
     Performs quality-control and post-processing on a raw Look-Locker T1 map.
 
-    This function cleans up noisy T1 fits by applying a three-step pipeline:
-    1. Masking: If no mask is provided, it automatically isolates the brain/head by
-       finding the largest contiguous tissue island and applying morphological smoothing.
-    2. Outlier Removal: Voxels falling outside the provided physiological bounds
-       [T1_low, T1_high] are discarded (set to NaN).
-    3. Interpolation: Internal "holes" (NaNs) created by poor fits or outlier
-       removal are iteratively filled using a specialized Gaussian filter that
-       interpolates from surrounding valid tissue without blurring the edges.
-
     Args:
         T1map (Path): Path to the raw, unmasked Look-Locker T1 map NIfTI file.
         T1_low (float): Lower physiological limit for T1 values (in ms).
@@ -174,6 +165,16 @@ def looklocker_t1map_postprocessing(
     Raises:
         RuntimeError: If more than 99% of the voxels are removed during the outlier
             filtering step, indicating a likely unit mismatch (e.g., T1 in seconds instead of ms).
+
+    Notes:
+        This function cleans up noisy T1 fits by applying a three-step pipeline:
+        1. Masking: If no mask is provided, it automatically isolates the brain/head by
+        finding the largest contiguous tissue island and applying morphological smoothing.
+        2. Outlier Removal: Voxels falling outside the provided physiological bounds
+        [T1_low, T1_high] are discarded (set to NaN).
+        3. Interpolation: Internal "holes" (NaNs) created by poor fits or outlier
+        removal are iteratively filled using a specialized Gaussian filter that
+        interpolates from surrounding valid tissue without blurring the edges.
     """
     t1map_mri = MRIData.from_file(T1map, dtype=np.single)
     t1map_data = t1map_mri.data.copy()
