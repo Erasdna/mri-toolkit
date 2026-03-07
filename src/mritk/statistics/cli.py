@@ -85,9 +85,6 @@ def compute_mri_stats(
 
 
 def get_stats_value(stats_file: Path, region: str, info: str, **kwargs):
-    """
-    Replaces the @click.command('get') decorated function.
-    """
     import sys
     from rich.console import Console
 

@@ -38,7 +38,7 @@ def compute_r1_array(
     return r1_data
 
 
-def convert_T1_to_R1(
+def convert_t1_to_r1(
     T1map_mri: MRIData,
     scale: float = 1000.0,
     t1_low: float = 1.0,
@@ -60,7 +60,7 @@ def convert_T1_to_R1(
     return MRIData(data=r1_data, affine=T1map_mri.affine)
 
 
-def T1_to_R1(
+def t1_to_r1(
     input_mri: Path | MRIData,
     output: Path | None = None,
     scale: float = 1000.0,
@@ -84,15 +84,35 @@ def T1_to_R1(
         ValueError: If input_mri is neither a Path nor an MRIData object.
     """
     if isinstance(input_mri, Path):
-        T1map_mri = MRIData.from_file(input_mri, dtype=np.single)
+        mri_t1 = MRIData.from_file(input_mri, dtype=np.single)
     elif isinstance(input_mri, MRIData):
-        T1map_mri = input_mri
+        mri_t1 = input_mri
     else:
         raise ValueError(f"Input should be a Path or MRIData, got {type(input_mri)}")
 
-    R1map_mri = convert_T1_to_R1(T1map_mri, scale, t1_low, t1_high)
+    mri_r1 = convert_t1_to_r1(mri_t1, scale, t1_low, t1_high)
 
     if output is not None:
-        R1map_mri.save(output, dtype=np.single)
+        mri_r1.save(output, dtype=np.single)
 
-    return R1map_mri
+    return mri_r1
+
+
+def add_arguments(parser):
+    """Add command-line arguments for the T1 to R1 conversion."""
+    parser.add_argument("-i", "--input", type=Path, required=True, help="Path to the input T1 map (NIfTI).")
+    parser.add_argument("-o", "--output", type=Path, help="Path to save the output R1 map (NIfTI).")
+    parser.add_argument("--scale", type=float, default=1000.0, help="Scaling factor for R1 calculation.")
+    parser.add_argument("--t1-low", type=float, default=1.0, help="Lower bound for valid T1 values.")
+    parser.add_argument("--t1-high", type=float, default=float("inf"), help="Upper bound for valid T1 values.")
+
+
+def dispatch(args: dict):
+    """Dispatch function for the T1 to R1 conversion."""
+    t1_to_r1(
+        input_mri=args.pop("input"),
+        output=args.pop("output"),
+        scale=args.pop("scale"),
+        t1_low=args.pop("t1_low"),
+        t1_high=args.pop("t1_high"),
+    )

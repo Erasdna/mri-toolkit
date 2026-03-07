@@ -267,16 +267,20 @@ def dicom_to_looklocker(dicomfile: Path, outpath: Path):
 def add_arguments(parser):
     subparser = parser.add_subparsers(dest="looklocker-command", help="Commands for processing Look-Locker data")
 
-    dicom_parser = subparser.add_parser("dcm2ll", help="Convert Look-Locker DICOM to NIfTI format")
+    dicom_parser = subparser.add_parser(
+        "dcm2ll", help="Convert Look-Locker DICOM to NIfTI format", formatter_class=parser.formatter_class
+    )
     dicom_parser.add_argument("-i", "--input", type=Path, help="Path to the input Look-Locker DICOM file")
     dicom_parser.add_argument("-o", "--output", type=Path, help="Desired output path for the converted .nii.gz file")
 
-    ll_t1 = subparser.add_parser("t1", help="Generate a T1 map from Look-Locker data")
+    ll_t1 = subparser.add_parser("t1", help="Generate a T1 map from Look-Locker data", formatter_class=parser.formatter_class)
     ll_t1.add_argument("-i", "--input", type=Path, help="Path to the 4D Look-Locker NIfTI file")
     ll_t1.add_argument("-t", "--timestamps", type=Path, help="Path to the text file containing trigger delay times (in ms)")
     ll_t1.add_argument("-o", "--output", type=Path, default=None, help="Path to save the resulting T1 map NIfTI file")
 
-    ll_post = subparser.add_parser("postprocess", help="Post-process a raw Look-Locker T1 map")
+    ll_post = subparser.add_parser(
+        "postprocess", help="Post-process a raw Look-Locker T1 map", formatter_class=parser.formatter_class
+    )
     ll_post.add_argument("-i", "--input", type=Path, help="Path to the raw Look-Locker T1 map NIfTI file")
     ll_post.add_argument("-o", "--output", type=Path, default=None, help="Path to save the cleaned T1 map NIfTI file")
     ll_post.add_argument("--t1-low", type=float, default=100.0, help="Lower physiological limit for T1 values (in ms)")
@@ -307,3 +311,5 @@ def dispatch(args):
             erode_dilate_factor=args.pop("erode_dilate_factor"),
             output=args.pop("output"),
         )
+    else:
+        raise ValueError(f"Unknown Look-Locker command: {command}")

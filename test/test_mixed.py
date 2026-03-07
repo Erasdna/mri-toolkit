@@ -1,8 +1,9 @@
+from unittest.mock import MagicMock, patch
+
 import numpy as np
 from pathlib import Path
 
-from unittest.mock import MagicMock, patch
-
+import mritk.cli
 from mritk.mixed import (
     compute_mixed_t1_array,
     extract_mixed_dicom,
@@ -121,3 +122,70 @@ def test_extract_mixed_dicom(mock_dcmread, mock_extract_single):
 
     # Ensure extract_single_volume was called twice (once for each subvolume)
     assert mock_extract_single.call_count == 2
+
+
+@patch("mritk.mixed.dicom_to_mixed")
+def test_dispatch_dcm2mixed_defaults(mock_dicom_to_mixed):
+    """Test the dcm2mixed command using default subvolumes."""
+
+    mritk.cli.main(["mixed", "dcm2mixed", "-i", "input_mixed.dcm", "-o", "output_base"])
+
+    mock_dicom_to_mixed.assert_called_once()
+    args, kwargs = mock_dicom_to_mixed.call_args
+    assert kwargs["dcmpath"] == Path("input_mixed.dcm")
+    assert kwargs["outpath"] == Path("output_base")
+    # Since we didn't provide -s, it should default to the VOLUME_LABELS list
+    assert isinstance(kwargs["subvolumes"], list)
+    assert len(kwargs["subvolumes"]) > 0
+
+
+@patch("mritk.mixed.dicom_to_mixed")
+def test_dispatch_dcm2mixed_explicit_subvolumes(mock_dicom_to_mixed):
+    """Test the dcm2mixed command with explicit subvolume arguments."""
+
+    mritk.cli.main(["mixed", "dcm2mixed", "-i", "input_mixed.dcm", "-o", "output_base", "-s", "SE-modulus", "IR-real"])
+
+    mock_dicom_to_mixed.assert_called_once_with(
+        dcmpath=Path("input_mixed.dcm"), outpath=Path("output_base"), subvolumes=["SE-modulus", "IR-real"]
+    )
+
+
+@patch("mritk.mixed.mixed_t1map")
+def test_dispatch_mixed_t1(mock_mixed_t1map):
+    """Test the t1 generation command checking types and defaults."""
+
+    mritk.cli.main(
+        [
+            "mixed",
+            "t1",
+            "-s",
+            "se_modulus.nii.gz",
+            "-i",
+            "ir_real.nii.gz",
+            "-m",
+            "meta.json",
+            "-o",
+            "t1_map.nii.gz",
+            # Omitting --t1-low and --t1-high to test the defaults (500.0 and 5000.0)
+        ]
+    )
+
+    mock_mixed_t1map.assert_called_once_with(
+        SE_nii_path=Path("se_modulus.nii.gz"),
+        IR_nii_path=Path("ir_real.nii.gz"),
+        meta_path=Path("meta.json"),
+        T1_low=500.0,
+        T1_high=5000.0,
+        output=Path("t1_map.nii.gz"),
+    )
+
+
+@patch("mritk.mixed.mixed_t1map_postprocessing")
+def test_dispatch_mixed_postprocess(mock_mixed_postprocessing):
+    """Test the postprocessing command passes paths correctly."""
+
+    mritk.cli.main(["mixed", "postprocess", "-s", "se_modulus.nii.gz", "-t", "t1_raw.nii.gz", "-o", "t1_masked.nii.gz"])
+
+    mock_mixed_postprocessing.assert_called_once_with(
+        SE_nii_path=Path("se_modulus.nii.gz"), T1_path=Path("t1_raw.nii.gz"), output=Path("t1_masked.nii.gz")
+    )

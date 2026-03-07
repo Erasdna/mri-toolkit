@@ -6,7 +6,7 @@ from typing import Sequence, Optional
 
 from rich_argparse import RichHelpFormatter
 
-from . import datasets, info, statistics, show, napari, looklocker
+from . import datasets, info, statistics, show, napari, looklocker, hybrid, mixed, r1, concentration
 
 
 def version_info():
@@ -70,6 +70,26 @@ def setup_parser():
     )
     looklocker.add_arguments(looklocker_parser)
 
+    hybrid_parser = subparsers.add_parser(
+        "hybrid", help="Generate a hybrid T1 map by merging Look-Locker and Mixed maps.", formatter_class=parser.formatter_class
+    )
+    hybrid.add_arguments(hybrid_parser)
+
+    mixed_parser = subparsers.add_parser(
+        "mixed", help="Generate a Mixed T1 map from Look-Locker data.", formatter_class=parser.formatter_class
+    )
+    mixed.add_arguments(mixed_parser)
+
+    t1_to_r1_parser = subparsers.add_parser(
+        "t12r1", help="Convert a T1 map to an R1 map.", formatter_class=parser.formatter_class
+    )
+    r1.add_arguments(t1_to_r1_parser)
+
+    concentration_parser = subparsers.add_parser(
+        "concentration", help="Compute concentration maps.", formatter_class=parser.formatter_class
+    )
+    concentration.add_arguments(concentration_parser)
+
     return parser
 
 
@@ -94,6 +114,17 @@ def dispatch(parser: argparse.ArgumentParser, argv: Optional[Sequence[str]] = No
             show.dispatch(args)
         elif command == "napari":
             napari.dispatch(args)
+        elif command == "looklocker":
+            looklocker.dispatch(args)
+        elif command == "hybrid":
+            hybrid.dispatch(args)
+        elif command == "mixed":
+            mixed.dispatch(args)
+        elif command == "t12r1":
+            r1.dispatch(args)
+        elif command == "concentration":
+            concentration.dispatch(args)
+
         else:
             logger.error(f"Unknown command {command}")
             parser.print_help()

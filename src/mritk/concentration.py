@@ -197,3 +197,47 @@ def concentration_from_R1(
         mri_data.save(output_path, dtype=np.single)
 
     return mri_data
+
+
+def add_arguments(parser):
+    subparsers = parser.add_subparsers(dest="concentration-command", required=True)
+
+    t1_parser = subparsers.add_parser("t1", help="Compute concentration from T1 maps.", formatter_class=parser.formatter_class)
+    t1_parser.add_argument("-i", "--input", type=Path, required=True, help="Path to the post-contrast T1 map (NIfTI).")
+    t1_parser.add_argument(
+        "-r", "--reference", type=Path, required=True, help="Path to the baseline (pre-contrast) T1 map (NIfTI)."
+    )
+    t1_parser.add_argument("-o", "--output", type=Path, help="Path to save the resulting concentration map (NIfTI).")
+    t1_parser.add_argument("--r1", type=float, default=0.0045, help="Relaxivity of the contrast agent (default: 0.0045).")
+    t1_parser.add_argument("--mask", type=Path, help="Path to a boolean mask NIfTI file to restrict computation (optional).")
+
+    r1_parser = subparsers.add_parser("r1", help="Compute concentration from R1 maps.", formatter_class=parser.formatter_class)
+    r1_parser.add_argument("-i", "--input", type=Path, required=True, help="Path to the post-contrast R1 map (NIfTI).")
+    r1_parser.add_argument(
+        "-r", "--reference", type=Path, required=True, help="Path to the baseline (pre-contrast) R1 map (NIfTI)."
+    )
+    r1_parser.add_argument("-o", "--output", type=Path, help="Path to save the resulting concentration map (NIfTI).")
+    r1_parser.add_argument("--r1", type=float, default=0.0045, help="Relaxivity of the contrast agent (default: 0.0045).")
+    r1_parser.add_argument("--mask", type=Path, help="Path to a boolean mask NIfTI file to restrict computation (optional).")
+
+
+def dispatch(args):
+    command = args.pop("concentration-command")
+    if command == "t1":
+        return concentration_from_T1(
+            input_path=args.pop("input"),
+            reference_path=args.pop("reference"),
+            output_path=args.pop("output"),
+            r1=args.pop("r1"),
+            mask_path=args.pop("mask"),
+        )
+    elif command == "r1":
+        return concentration_from_R1(
+            input_path=args.pop("input"),
+            reference_path=args.pop("reference"),
+            output_path=args.pop("output"),
+            r1=args.pop("r1"),
+            mask_path=args.pop("mask"),
+        )
+    else:
+        raise ValueError(f"Unknown concentration command: {command}")

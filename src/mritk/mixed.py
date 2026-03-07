@@ -1,4 +1,4 @@
-# T1 Maps generation module
+# Mixed sequence
 
 # Copyright (C) 2026   Jørgen Riseth (jnriseth@gmail.com)
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
@@ -321,3 +321,72 @@ def dicom_to_mixed(dcmpath: Path, outpath: Path, subvolumes: Optional[list[str]]
 
     # Attempt standard dcm2niix conversion (soft failure allowed for legacy behavior)
     run_dcm2niix(dcmpath, outdir, form, extra_args="-w 0 --terse -b o", check=False)
+
+
+def add_arguments(parser):
+    subparser = parser.add_subparsers(dest="hybrid-command", required=True, title="hybrid subcommands")
+
+    dmc_parser = subparser.add_parser(
+        "dcm2mixed",
+        help="Convert a Mixed sequence DICOM file into separate NIfTI subvolumes and metadata.",
+        formatter_class=parser.formatter_class,
+    )
+    dmc_parser.add_argument("-i", "--input", type=Path, required=True, help="Path to the input Mixed DICOM file.")
+    dmc_parser.add_argument(
+        "-o", "--output", type=Path, required=True, help="Base path for output NIfTI files and metadata JSON."
+    )
+    dmc_parser.add_argument(
+        "-s",
+        "--subvolumes",
+        nargs="+",
+        default=VOLUME_LABELS,
+        help=f"Specific subvolumes to extract, space-separated. Defaults to all: {VOLUME_LABELS}.",
+    )
+
+    t1_parser = subparser.add_parser(
+        "t1", help="Generate a T1 map from Mixed sequence NIfTI files.", formatter_class=parser.formatter_class
+    )
+    t1_parser.add_argument("-s", "--se", type=Path, required=True, help="Path to the Spin-Echo modulus NIfTI file.")
+    t1_parser.add_argument(
+        "-i", "--ir", type=Path, required=True, help="Path to the Inversion-Recovery corrected real NIfTI file."
+    )
+    t1_parser.add_argument(
+        "-m", "--meta", type=Path, required=True, help="Path to the JSON file containing the sequence parameters."
+    )
+    t1_parser.add_argument("--t1-low", type=float, default=500.0, help="Lower bound for T1 interpolation grid (ms).")
+    t1_parser.add_argument("--t1-high", type=float, default=5000.0, help="Upper bound for T1 interpolation grid (ms).")
+    t1_parser.add_argument("-o", "--output", type=Path, required=True, help="Output path for the generated T1 map NIfTI file.")
+
+    post_parser = subparser.add_parser(
+        "postprocess",
+        help="Mask a Mixed T1 map to isolate the CSF using the original SE sequence.",
+        formatter_class=parser.formatter_class,
+    )
+    post_parser.add_argument(
+        "-s", "--se", type=Path, required=True, help="Path to the Spin-Echo modulus NIfTI file used to derive the mask."
+    )
+    post_parser.add_argument(
+        "-t", "--t1", type=Path, required=True, help="Path to the previously generated Mixed T1 map NIfTI file."
+    )
+    post_parser.add_argument("-o", "--output", type=Path, required=True, help="Output path for the masked T1 map NIfTI file.")
+
+
+def dispatch(args):
+    """Dispatch function for the mixed T1 map generation commands."""
+    command = args.pop("hybrid-command")  # Note: matches the 'dest' in your add_arguments
+
+    if command == "dcm2mixed":
+        dicom_to_mixed(dcmpath=args.pop("input"), outpath=args.pop("output"), subvolumes=args.pop("subvolumes"))
+    elif command == "t1":
+        mixed_t1map(
+            SE_nii_path=args.pop("se"),
+            IR_nii_path=args.pop("ir"),
+            meta_path=args.pop("meta"),
+            T1_low=args.pop("t1_low"),
+            T1_high=args.pop("t1_high"),
+            output=args.pop("output"),
+        )
+    elif command == "postprocess":
+        mixed_t1map_postprocessing(SE_nii_path=args.pop("se"), T1_path=args.pop("t1"), output=args.pop("output"))
+    else:
+        raise ValueError(f"Unknown command: {command}")

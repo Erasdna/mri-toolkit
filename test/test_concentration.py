@@ -3,10 +3,12 @@
 # Copyright (C) 2026   Jørgen Riseth (jnriseth@gmail.com)
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 # Copyright (C) 2026   Simula Research Laboratory
-
 from pathlib import Path
+from unittest.mock import patch
+
 import numpy as np
 
+import mritk.cli
 from mritk.concentration import (
     concentration_from_T1_expr,
     concentration_from_R1_expr,
@@ -142,3 +144,89 @@ def test_compute_concentration_from_R1_array_no_mask():
 
     assert np.isclose(result[0], 200.0)
     assert np.isclose(result[1], 200.0)
+
+
+@patch("mritk.concentration.concentration_from_T1")
+def test_dispatch_concentration_t1_defaults(mock_conc_t1):
+    """Test the T1 concentration command with minimum required arguments."""
+    mritk.cli.main(["concentration", "t1", "-i", "post_t1.nii.gz", "-r", "pre_t1.nii.gz"])
+
+    # Verify paths are parsed and default arguments (r1, output, mask) are applied
+    mock_conc_t1.assert_called_once_with(
+        input_path=Path("post_t1.nii.gz"),
+        reference_path=Path("pre_t1.nii.gz"),
+        output_path=None,
+        r1=0.0045,
+        mask_path=None,
+    )
+
+
+@patch("mritk.concentration.concentration_from_T1")
+def test_dispatch_concentration_t1_explicit(mock_conc_t1):
+    """Test the T1 concentration command with all optional arguments explicitly provided."""
+    mritk.cli.main(
+        [
+            "concentration",
+            "t1",
+            "--input",
+            "post_t1.nii.gz",
+            "--reference",
+            "pre_t1.nii.gz",
+            "--output",
+            "concentration.nii.gz",
+            "--r1",
+            "0.005",
+            "--mask",
+            "brain_mask.nii.gz",
+        ]
+    )
+
+    # Verify explicit overrides and type casting (e.g., float for r1)
+    mock_conc_t1.assert_called_once_with(
+        input_path=Path("post_t1.nii.gz"),
+        reference_path=Path("pre_t1.nii.gz"),
+        output_path=Path("concentration.nii.gz"),
+        r1=0.005,
+        mask_path=Path("brain_mask.nii.gz"),
+    )
+
+
+@patch("mritk.concentration.concentration_from_R1")
+def test_dispatch_concentration_r1_defaults(mock_conc_r1):
+    """Test the R1 concentration command with minimum required arguments."""
+    mritk.cli.main(["concentration", "r1", "-i", "post_r1.nii.gz", "-r", "pre_r1.nii.gz"])
+
+    # Verify paths are parsed and default arguments are applied
+    mock_conc_r1.assert_called_once_with(
+        input_path=Path("post_r1.nii.gz"), reference_path=Path("pre_r1.nii.gz"), output_path=None, r1=0.0045, mask_path=None
+    )
+
+
+@patch("mritk.concentration.concentration_from_R1")
+def test_dispatch_concentration_r1_explicit(mock_conc_r1):
+    """Test the R1 concentration command with all optional arguments explicitly provided."""
+    mritk.cli.main(
+        [
+            "concentration",
+            "r1",
+            "--input",
+            "post_r1.nii.gz",
+            "--reference",
+            "pre_r1.nii.gz",
+            "--output",
+            "conc_r1.nii.gz",
+            "--r1",
+            "0.0032",
+            "--mask",
+            "csf_mask.nii.gz",
+        ]
+    )
+
+    # Verify explicit overrides and type casting
+    mock_conc_r1.assert_called_once_with(
+        input_path=Path("post_r1.nii.gz"),
+        reference_path=Path("pre_r1.nii.gz"),
+        output_path=Path("conc_r1.nii.gz"),
+        r1=0.0032,
+        mask_path=Path("csf_mask.nii.gz"),
+    )

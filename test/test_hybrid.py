@@ -1,7 +1,9 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
+import mritk.cli
 from mritk.hybrid import compute_hybrid_t1_array, hybrid_t1map
 from mritk.testing import compare_nifti_images
 
@@ -52,3 +54,57 @@ def test_compute_hybrid_t1_array():
     hybrid2 = compute_hybrid_t1_array(ll_data, mixed_data, mask, threshold)
     # Voxel 2: LL(2000) > 1500 AND Mixed(3000) > 1500 AND Mask=True -> Merge!
     assert hybrid2[2] == 3000.0
+
+
+@patch("mritk.hybrid.hybrid_t1map")
+def test_dispatch_hybrid_defaults(mock_hybrid_t1map):
+    """Test the hybrid CLI command with required arguments, relying on defaults for threshold and erode."""
+
+    # We pass the arguments exactly as a user would type them in the terminal.
+    # If "hybrid" is nested under another command (like "t1maps hybrid"), add that prefix to the list.
+    mritk.cli.main(
+        ["hybrid", "-i", "ll_map.nii.gz", "-m", "mixed_map.nii.gz", "-c", "csf_mask.nii.gz", "-o", "output_hybrid.nii.gz"]
+    )
+
+    # Verify the underlying function was called with parsed Paths and the correct default values
+    mock_hybrid_t1map.assert_called_once_with(
+        LL_path=Path("ll_map.nii.gz"),
+        mixed_path=Path("mixed_map.nii.gz"),
+        csf_mask_path=Path("csf_mask.nii.gz"),
+        threshold=4000.0,  # Default value
+        erode=0,  # Default value
+        output=Path("output_hybrid.nii.gz"),
+    )
+
+
+@patch("mritk.hybrid.hybrid_t1map")
+def test_dispatch_hybrid_explicit_args(mock_hybrid_t1map):
+    """Test the hybrid CLI command with all arguments explicitly provided using long-form flags."""
+
+    mritk.cli.main(
+        [
+            "hybrid",
+            "--input-ll",
+            "ll_map.nii.gz",
+            "--input-mixed",
+            "mixed_map.nii.gz",
+            "--csf-mask",
+            "csf_mask.nii.gz",
+            "--threshold",
+            "3500.5",
+            "--erode",
+            "2",
+            "--output",
+            "output_hybrid.nii.gz",
+        ]
+    )
+
+    # Verify the underlying function received the explicit overrides and correct types
+    mock_hybrid_t1map.assert_called_once_with(
+        LL_path=Path("ll_map.nii.gz"),
+        mixed_path=Path("mixed_map.nii.gz"),
+        csf_mask_path=Path("csf_mask.nii.gz"),
+        threshold=3500.5,
+        erode=2,
+        output=Path("output_hybrid.nii.gz"),
+    )

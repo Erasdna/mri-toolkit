@@ -1,8 +1,10 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
+import mritk.cli
 from mritk.testing import compare_nifti_images
 from mritk.looklocker import (
     looklocker_t1map,
@@ -73,3 +75,54 @@ def test_create_largest_island_mask():
     # Speck should be dropped, major block should be True
     assert mask[0, 0, 0] == np.False_
     assert mask[7, 7, 7] == np.True_
+
+
+@patch("mritk.looklocker.dicom_to_looklocker")
+def test_dispatch_dcm2ll(mock_dicom_to_ll):
+    """Test that dispatch correctly routes to dicom_to_looklocker."""
+
+    mritk.cli.main(["looklocker", "dcm2ll", "-i", "dummy_in.dcm", "-o", "dummy_out.nii.gz"])
+
+    mock_dicom_to_ll.assert_called_once_with(Path("dummy_in.dcm"), Path("dummy_out.nii.gz"))
+
+
+@patch("mritk.looklocker.looklocker_t1map")
+def test_dispatch_t1(mock_ll_t1map):
+    """Test that dispatch correctly routes to looklocker_t1map."""
+
+    mritk.cli.main(["looklocker", "t1", "-i", "data.nii.gz", "-t", "times.txt", "-o", "t1map.nii.gz"])
+
+    mock_ll_t1map.assert_called_once_with(Path("data.nii.gz"), Path("times.txt"), output=Path("t1map.nii.gz"))
+
+
+@patch("mritk.looklocker.looklocker_t1map_postprocessing")
+def test_dispatch_postprocess(mock_postprocessing):
+    """Test that dispatch correctly routes to looklocker_t1map_postprocessing."""
+
+    mritk.cli.main(
+        [
+            "looklocker",
+            "postprocess",
+            "-i",
+            "raw_t1.nii.gz",
+            "-o",
+            "clean_t1.nii.gz",
+            "--t1-low",
+            "50.0",
+            "--t1-high",
+            "5000.0",
+            "--radius",
+            "5",
+            "--erode-dilate-factor",
+            "1.5",
+        ]
+    )
+
+    mock_postprocessing.assert_called_once_with(
+        T1map=Path("raw_t1.nii.gz"),
+        T1_low=50.0,
+        T1_high=5000.0,
+        radius=5,
+        erode_dilate_factor=1.5,
+        output=Path("clean_t1.nii.gz"),
+    )
