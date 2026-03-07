@@ -8,8 +8,7 @@
 import numpy as np
 from pathlib import Path
 
-from ..data.base import MRIData
-from ..data.io import load_mri_data, save_mri_data
+from .data import MRIData
 
 
 def compute_r1_array(
@@ -85,7 +84,7 @@ def T1_to_R1(
         ValueError: If input_mri is neither a Path nor an MRIData object.
     """
     if isinstance(input_mri, Path):
-        T1map_mri = load_mri_data(input_mri, dtype=np.single)
+        T1map_mri = MRIData.from_file(input_mri, dtype=np.single)
     elif isinstance(input_mri, MRIData):
         T1map_mri = input_mri
     else:
@@ -94,6 +93,6 @@ def T1_to_R1(
     R1map_mri = convert_T1_to_R1(T1map_mri, scale, t1_low, t1_high)
 
     if output is not None:
-        save_mri_data(R1map_mri, output, dtype=np.single)
+        R1map_mri.save(output, dtype=np.single)
 
     return R1map_mri

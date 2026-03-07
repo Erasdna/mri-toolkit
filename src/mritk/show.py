@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.columns import Columns
 
 # Assuming relative imports based on your previous file structure
-from .data.io import load_mri_data
+from .data import MRIData
 
 
 def add_arguments(parser: argparse.ArgumentParser):
@@ -82,7 +82,7 @@ def dispatch(args):
     console = Console()
     console.print(f"[bold green]Loading MRI data from:[/bold green] {file_path}")
 
-    mri_resource = load_mri_data(file_path)
+    mri_resource = MRIData.from_file(file_path)
     data = mri_resource.data
 
     # 2. Define Slice Indices (Middle of the brain)
@@ -91,7 +91,7 @@ def dispatch(args):
     z_idx = int(data.shape[2] * slize_z)
 
     # 3. Extract Slices
-    # orientation in load_mri_data is typically RAS (Right, Anterior, Superior)
+    # orientation is typically RAS (Right, Anterior, Superior)
     # Numpy origin is top-left. We often need to rotate/flip for correct medical view.
 
     # Sagittal View (Side): Fix X. Axes are Y (Ant) and Z (Sup).

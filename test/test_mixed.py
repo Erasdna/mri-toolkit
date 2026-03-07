@@ -3,14 +3,15 @@ from pathlib import Path
 
 from unittest.mock import MagicMock, patch
 
-from mritk.t1.mixed import (
+from mritk.mixed import (
     compute_mixed_t1_array,
     extract_mixed_dicom,
     mixed_t1map,
     mixed_t1map_postprocessing,
     _extract_frame_metadata,
 )
-from mritk.t1.utils import VOLUME_LABELS, compare_nifti_images
+from mritk.utils import VOLUME_LABELS
+from mritk.testing import compare_nifti_images
 
 
 def test_mixed_t1map(tmp_path, mri_data_dir: Path):
@@ -69,7 +70,7 @@ def test_extract_frame_metadata():
     assert meta["ETL"] == 5
 
 
-@patch("mritk.t1.mixed.extract_single_volume")
+@patch("mritk.mixed.extract_single_volume")
 @patch("pydicom.dcmread")
 def test_extract_mixed_dicom(mock_dcmread, mock_extract_single):
     """Test parsing a multi-volume DICOM file into independent subvolumes."""

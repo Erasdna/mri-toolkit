@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 import tqdm.rich
 
-from ..data.io import load_mri_data
-from ..data.orientation import assert_same_space
+from ..data import MRIData
+from ..testing import assert_same_space
 from ..segmentation.groups import default_segmentation_groups
 from ..segmentation.lookup_table import read_lut
 from .utils import voxel_count_to_ml_scale, find_timestamp, prepend_info
@@ -155,8 +155,8 @@ def generate_stats_dataframe(
         pd.DataFrame: A formatted DataFrame with statistics for all identified regions.
     """
     # Load and validate the data
-    mri = load_mri_data(mri_path, dtype=np.single)
-    seg = load_mri_data(seg_path, dtype=np.int16)
+    mri = MRIData.from_file(mri_path, dtype=np.single)
+    seg = MRIData.from_file(seg_path, dtype=np.int16)
     assert_same_space(seg, mri)
 
     # Resolve metadata

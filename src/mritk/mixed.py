@@ -17,11 +17,8 @@ import skimage
 import nibabel
 
 
-from ..data.orientation import data_reorientation, change_of_coordinates_map
-
-from ..data.base import MRIData
-from ..data.io import load_mri_data
-from ..masking.masks import create_csf_mask
+from .data import data_reorientation, change_of_coordinates_map, MRIData
+from .masking.masks import create_csf_mask
 from .utils import T1_lookup_table, VOLUME_LABELS, run_dcm2niix
 
 logger = logging.getLogger(__name__)
@@ -128,8 +125,8 @@ def mixed_t1map(
         nibabel.nifti1.Nifti1Image: The computed T1 map as a NIfTI image object,
         with the qform/sform properly set to scanner space.
     """
-    se_mri = load_mri_data(SE_nii_path, dtype=np.single)
-    ir_mri = load_mri_data(IR_nii_path, dtype=np.single)
+    se_mri = MRIData.from_file(SE_nii_path, dtype=np.single)
+    ir_mri = MRIData.from_file(IR_nii_path, dtype=np.single)
     meta = json.loads(meta_path.read_text())
 
     t1_volume = compute_mixed_t1_array(se_mri.data, ir_mri.data, meta, T1_low, T1_high)
@@ -163,7 +160,7 @@ def mixed_t1map_postprocessing(SE_nii_path: Path, T1_path: Path, output: Path | 
         have been set to NaN.
     """
     t1map_nii = nibabel.nifti1.load(T1_path)
-    se_mri = load_mri_data(SE_nii_path, np.single)
+    se_mri = MRIData.from_file(SE_nii_path, dtype=np.single)
 
     mask = create_csf_mask(se_mri.data, use_li=True)
     mask = skimage.morphology.erosion(mask)

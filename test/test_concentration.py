@@ -15,7 +15,7 @@ from mritk.concentration import (
     concentration_from_T1,
 )
 
-from mritk.t1.utils import compare_nifti_images
+from mritk.testing import compare_nifti_images
 
 
 def test_intracranial_concentration(tmp_path, mri_data_dir: Path):

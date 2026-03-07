@@ -10,9 +10,8 @@ import skimage
 from typing import Optional
 from pathlib import Path
 
-from ..data.base import MRIData
-from ..data.io import load_mri_data, save_mri_data
-from ..data.orientation import assert_same_space
+from ..data import MRIData
+from ..testing import assert_same_space
 from .utils import largest_island
 
 
@@ -40,12 +39,12 @@ def csf_mask(
     use_li: bool = False,
     output: Path | None = None,
 ) -> MRIData:
-    input_vol = load_mri_data(input, dtype=np.single)
+    input_vol = MRIData.from_file(input, dtype=np.single)
     mask = create_csf_mask(input_vol.data, connectivity, use_li)
     assert np.max(mask) > 0, "Masking failed, no voxels in mask"
     mri_data = MRIData(data=mask, affine=input_vol.affine)
     if output is not None:
-        save_mri_data(mri_data, output, dtype=np.uint8)
+        mri_data.save(output, dtype=np.uint8)
     return mri_data
 
 
@@ -63,10 +62,10 @@ def intracranial_mask(
     segmentation: Path,
     output: Optional[Path] = None,
 ) -> MRIData:
-    input_csf_mask = load_mri_data(csf_mask, dtype=bool)
-    segmentation_data = load_mri_data(segmentation, dtype=bool)
+    input_csf_mask = MRIData.from_file(csf_mask, dtype=bool)
+    segmentation_data = MRIData.from_file(segmentation, dtype=bool)
     mask_data = create_intracranial_mask(input_csf_mask, segmentation_data)
     mri_data = MRIData(data=mask_data, affine=segmentation_data.affine)
     if output is not None:
-        save_mri_data(mri_data, output, dtype=np.uint8)
+        mri_data.save(output, dtype=np.uint8)
     return mri_data

@@ -6,7 +6,7 @@ from typing import Sequence, Optional
 
 from rich_argparse import RichHelpFormatter
 
-from . import datasets, info, statistics, show, napari, t1
+from . import datasets, info, statistics, show, napari, looklocker
 
 
 def version_info():
@@ -65,8 +65,10 @@ def setup_parser():
     napari_parser = subparsers.add_parser("napari", help="Show MRI data using napari", formatter_class=parser.formatter_class)
     napari.add_arguments(napari_parser)
 
-    t1_parser = subparsers.add_parser("t1", help="Show MRI data using t1", formatter_class=parser.formatter_class)
-    t1.cli.add_arguments(t1_parser)
+    looklocker_parser = subparsers.add_parser(
+        "looklocker", help="Process Look-Locker data", formatter_class=parser.formatter_class
+    )
+    looklocker.add_arguments(looklocker_parser)
 
     return parser
 

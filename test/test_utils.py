@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-from mritk.t1.utils import (
+from mritk.utils import (
     voxel_fit_function,
     nan_filter_gaussian,
     estimate_se_free_relaxation_time,

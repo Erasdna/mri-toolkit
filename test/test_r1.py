@@ -7,8 +7,8 @@
 import numpy as np
 import pytest
 
-from mritk.data.base import MRIData
-from mritk.t1.r1 import (
+from mritk.data import MRIData
+from mritk.r1 import (
     compute_r1_array,
     convert_T1_to_R1,
     T1_to_R1,

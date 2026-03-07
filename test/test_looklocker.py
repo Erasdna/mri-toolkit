@@ -3,8 +3,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mritk.t1.utils import compare_nifti_images
-from mritk.t1.looklocker import (
+from mritk.testing import compare_nifti_images
+from mritk.looklocker import (
     looklocker_t1map,
     looklocker_t1map_postprocessing,
     remove_outliers,

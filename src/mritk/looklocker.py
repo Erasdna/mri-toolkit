@@ -16,8 +16,8 @@ from pathlib import Path
 import tqdm
 import skimage
 
-from ..data.base import MRIData
-from ..data.io import load_mri_data, save_mri_data
+from .data import MRIData
+
 from .utils import mri_facemask, fit_voxel, nan_filter_gaussian, run_dcm2niix
 
 logger = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ def looklocker_t1map_postprocessing(
         RuntimeError: If more than 99% of the voxels are removed during the outlier
             filtering step, indicating a likely unit mismatch (e.g., T1 in seconds instead of ms).
     """
-    t1map_mri = load_mri_data(T1map, dtype=np.single)
+    t1map_mri = MRIData.from_file(T1map, dtype=np.single)
     t1map_data = t1map_mri.data.copy()
 
     if mask is None:
@@ -195,7 +195,7 @@ def looklocker_t1map_postprocessing(
 
     processed_T1map = MRIData(t1map_data, t1map_mri.affine)
     if output is not None:
-        save_mri_data(processed_T1map, output, dtype=np.single)
+        processed_T1map.save(output, dtype=np.single)
 
     return processed_T1map
 
@@ -219,7 +219,7 @@ def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path | No
         MRIData: An MRIData object containing the computed 3D T1 map (in milliseconds)
         and the original affine transformation matrix.
     """
-    ll_mri = load_mri_data(looklocker_input, dtype=np.single)
+    ll_mri = MRIData.from_file(looklocker_input, dtype=np.single)
     # Convert timestamps from milliseconds to seconds
     time_s = np.loadtxt(timestamps) / 1000.0
 
@@ -227,7 +227,7 @@ def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path | No
     t1map_mri = MRIData(t1map_array.astype(np.single), ll_mri.affine)
 
     if output is not None:
-        save_mri_data(t1map_mri, output, dtype=np.single)
+        t1map_mri.save(output, dtype=np.single)
 
     return t1map_mri
 
@@ -260,5 +260,50 @@ def dicom_to_looklocker(dicomfile: Path, outpath: Path):
         shutil.copy(tmppath / f"{form}.json", outpath.with_suffix(".json"))
 
         # Reload and save to standardize intent codes and precision
-        mri = load_mri_data(tmppath / f"{form}.nii.gz", dtype=np.double)
-        save_mri_data(mri, outpath.with_suffix(".nii.gz"), dtype=np.single, intent_code=2001)
+        mri = MRIData.from_file(tmppath / f"{form}.nii.gz", dtype=np.double)
+        mri.save(outpath.with_suffix(".nii.gz"), dtype=np.single, intent_code=2001)
+
+
+def add_arguments(parser):
+    subparser = parser.add_subparsers(dest="looklocker-command", help="Commands for processing Look-Locker data")
+
+    dicom_parser = subparser.add_parser("dcm2ll", help="Convert Look-Locker DICOM to NIfTI format")
+    dicom_parser.add_argument("-i", "--input", type=Path, help="Path to the input Look-Locker DICOM file")
+    dicom_parser.add_argument("-o", "--output", type=Path, help="Desired output path for the converted .nii.gz file")
+
+    ll_t1 = subparser.add_parser("t1", help="Generate a T1 map from Look-Locker data")
+    ll_t1.add_argument("-i", "--input", type=Path, help="Path to the 4D Look-Locker NIfTI file")
+    ll_t1.add_argument("-t", "--timestamps", type=Path, help="Path to the text file containing trigger delay times (in ms)")
+    ll_t1.add_argument("-o", "--output", type=Path, default=None, help="Path to save the resulting T1 map NIfTI file")
+
+    ll_post = subparser.add_parser("postprocess", help="Post-process a raw Look-Locker T1 map")
+    ll_post.add_argument("-i", "--input", type=Path, help="Path to the raw Look-Locker T1 map NIfTI file")
+    ll_post.add_argument("-o", "--output", type=Path, default=None, help="Path to save the cleaned T1 map NIfTI file")
+    ll_post.add_argument("--t1-low", type=float, default=100.0, help="Lower physiological limit for T1 values (in ms)")
+    ll_post.add_argument("--t1-high", type=float, default=10000.0, help="Upper physiological limit for T1 values (in ms)")
+    ll_post.add_argument(
+        "--radius", type=int, default=10, help="Base radius for morphological dilation when generating the automatic mask"
+    )
+    ll_post.add_argument(
+        "--erode-dilate-factor",
+        type=float,
+        default=1.3,
+        help="Multiplier for the erosion radius relative to the dilation radius to ensure tight mask edges",
+    )
+
+
+def dispatch(args):
+    command = args.pop("looklocker-command")
+    if command == "dcm2ll":
+        dicom_to_looklocker(args.pop("input"), args.pop("output"))
+    elif command == "t1":
+        looklocker_t1map(args.pop("input"), args.pop("timestamps"), output=args.pop("output"))
+    elif command == "postprocess":
+        looklocker_t1map_postprocessing(
+            T1map=args.pop("input"),
+            T1_low=args.pop("t1_low"),
+            T1_high=args.pop("t1_high"),
+            radius=args.pop("radius"),
+            erode_dilate_factor=args.pop("erode_dilate_factor"),
+            output=args.pop("output"),
+        )

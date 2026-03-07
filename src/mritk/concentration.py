@@ -8,9 +8,9 @@
 import numpy as np
 from pathlib import Path
 
-from .data.base import MRIData
-from .data.io import load_mri_data, save_mri_data
-from .data.orientation import assert_same_space
+from .data import MRIData
+
+from .testing import assert_same_space
 
 
 def concentration_from_T1_expr(t1: np.ndarray, t1_0: np.ndarray, r1: float) -> np.ndarray:
@@ -101,13 +101,13 @@ def concentration_from_T1(
     Returns:
         MRIData: An MRIData object containing the concentration array and the affine matrix.
     """
-    t1_mri = load_mri_data(input_path, dtype=np.single)
-    t10_mri = load_mri_data(reference_path, dtype=np.single)
+    t1_mri = MRIData.from_file(input_path, dtype=np.single)
+    t10_mri = MRIData.from_file(reference_path, dtype=np.single)
     assert_same_space(t1_mri, t10_mri)
 
     mask_data = None
     if mask_path is not None:
-        mask_mri = load_mri_data(mask_path, dtype=bool)
+        mask_mri = MRIData.from_file(mask_path, dtype=bool)
         assert_same_space(mask_mri, t10_mri)
         mask_data = mask_mri.data
 
@@ -116,7 +116,7 @@ def concentration_from_T1(
     mri_data = MRIData(data=concentrations_array, affine=t10_mri.affine)
 
     if output_path is not None:
-        save_mri_data(mri_data, output_path, dtype=np.single)
+        mri_data.save(output_path, dtype=np.single)
 
     return mri_data
 
@@ -179,13 +179,13 @@ def concentration_from_R1(
     Returns:
         MRIData: An MRIData object containing the concentration array and the affine matrix.
     """
-    r1_mri = load_mri_data(input_path, dtype=np.single)
-    r10_mri = load_mri_data(reference_path, dtype=np.single)
+    r1_mri = MRIData.from_file(input_path, dtype=np.single)
+    r10_mri = MRIData.from_file(reference_path, dtype=np.single)
     assert_same_space(r1_mri, r10_mri)
 
     mask_data = None
     if mask_path is not None:
-        mask_mri = load_mri_data(mask_path, dtype=bool)
+        mask_mri = MRIData.from_file(mask_path, dtype=bool)
         assert_same_space(mask_mri, r10_mri)
         mask_data = mask_mri.data
 
@@ -194,6 +194,6 @@ def concentration_from_R1(
     mri_data = MRIData(data=concentrations_array, affine=r10_mri.affine)
 
     if output_path is not None:
-        save_mri_data(mri_data, output_path, dtype=np.single)
+        mri_data.save(output_path, dtype=np.single)
 
     return mri_data

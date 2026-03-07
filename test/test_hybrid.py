@@ -2,8 +2,8 @@ from pathlib import Path
 
 import numpy as np
 
-from mritk.t1.hybrid import compute_hybrid_t1_array, hybrid_t1map
-from mritk.t1.utils import compare_nifti_images
+from mritk.hybrid import compute_hybrid_t1_array, hybrid_t1map
+from mritk.testing import compare_nifti_images
 
 
 def test_hybrid_t1map(tmp_path, mri_data_dir: Path):
