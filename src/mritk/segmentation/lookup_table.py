@@ -5,11 +5,12 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 
-import re
 import os
+import re
 from pathlib import Path
-import pandas as pd
 from urllib.request import urlretrieve
+
+import pandas as pd
 
 
 def read_lut(filename: Path | str | None) -> pd.DataFrame:

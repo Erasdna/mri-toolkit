@@ -13,10 +13,10 @@ import pandas as pd
 import tqdm.rich
 
 from ..data import MRIData
-from ..testing import assert_same_space
 from ..segmentation.groups import default_segmentation_groups
 from ..segmentation.lookup_table import read_lut
-from .utils import voxel_count_to_ml_scale, find_timestamp, prepend_info
+from ..testing import assert_same_space
+from .utils import find_timestamp, prepend_info, voxel_count_to_ml_scale
 
 
 def extract_metadata(

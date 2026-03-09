@@ -5,21 +5,20 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 import argparse
-from collections.abc import Callable
 import logging
-import numpy as np
-import tempfile
 import shutil
+import tempfile
+from collections.abc import Callable
 from functools import partial
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
-import tqdm
+import numpy as np
 import skimage
+import tqdm
 
 from .data import MRIData
-
-from .utils import mri_facemask, fit_voxel, nan_filter_gaussian, run_dcm2niix
+from .utils import fit_voxel, mri_facemask, nan_filter_gaussian, run_dcm2niix
 
 logger = logging.getLogger(__name__)
 

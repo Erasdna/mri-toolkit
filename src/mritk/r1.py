@@ -8,6 +8,7 @@ import argparse
 import logging
 from collections.abc import Callable
 from pathlib import Path
+
 import numpy as np
 
 from .data import MRIData

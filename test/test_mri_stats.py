@@ -1,9 +1,10 @@
 from pathlib import Path
+
 import numpy as np
 import pytest
 
-from mritk.statistics.compute_stats import extract_metadata, compute_region_statistics, generate_stats_dataframe
 import mritk.cli as cli
+from mritk.statistics.compute_stats import compute_region_statistics, extract_metadata, generate_stats_dataframe
 
 
 def test_compute_stats_default(mri_data_dir: Path):

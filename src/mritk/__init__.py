@@ -5,8 +5,7 @@
 
 from importlib.metadata import metadata
 
-from . import data, segmentation, statistics, concentration, utils, looklocker, mixed, hybrid, r1
-
+from . import concentration, data, hybrid, looklocker, mixed, r1, segmentation, statistics, utils
 
 meta = metadata("mritk")
 __version__ = meta["Version"]

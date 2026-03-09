@@ -5,17 +5,17 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
 from mritk.utils import (
-    voxel_fit_function,
-    nan_filter_gaussian,
-    estimate_se_free_relaxation_time,
     T1_lookup_table,
+    estimate_se_free_relaxation_time,
+    nan_filter_gaussian,
     run_dcm2niix,
+    voxel_fit_function,
 )
 
 

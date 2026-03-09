@@ -5,10 +5,10 @@ Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 Copyright (C) 2026   Simula Research Laboratory
 """
 
-import numpy as np
 import nibabel as nib
+import numpy as np
 
-from mritk.masks import create_csf_mask, csf_mask, compute_intracranial_mask_array, intracranial_mask, largest_island
+from mritk.masks import compute_intracranial_mask_array, create_csf_mask, csf_mask, intracranial_mask, largest_island
 
 
 def test_largest_island():

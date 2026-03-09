@@ -4,14 +4,15 @@
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 # Copyright (C) 2026   Simula Research Laboratory
 
-from collections.abc import Callable
 import argparse
 import logging
-from dataclasses import dataclass
-import zipfile
-from pathlib import Path
 import urllib.request
+import zipfile
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from pathlib import Path
+
 import tqdm
 
 logger = logging.getLogger(__name__)
@@ -124,11 +125,11 @@ class ProgressBar:
 
 
 def list_datasets_verbose(key: str):
-    from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich.text import Text
     from rich import box
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich.text import Text
 
     console = Console()
     datasets = get_datasets()
@@ -179,9 +180,9 @@ def list_datasets_verbose(key: str):
 def list_datasets():
     """Prints a simple table with only Key, Name and DOI."""
 
+    from rich import box
     from rich.console import Console
     from rich.table import Table
-    from rich import box
 
     console = Console()
     datasets = get_datasets()

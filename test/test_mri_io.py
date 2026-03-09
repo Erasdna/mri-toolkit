@@ -6,6 +6,7 @@ Copyright (C) 2026   Simula Research Laboratory
 """
 
 import numpy as np
+
 from mritk.data import MRIData
 
 

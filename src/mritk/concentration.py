@@ -5,9 +5,9 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 import argparse
+import logging
 from collections.abc import Callable
 from pathlib import Path
-import logging
 
 import numpy as np
 

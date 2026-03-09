@@ -5,13 +5,13 @@ import numpy as np
 import pytest
 
 import mritk.cli
-from mritk.testing import compare_nifti_images
 from mritk.looklocker import (
+    create_largest_island_mask,
     looklocker_t1map,
     looklocker_t1map_postprocessing,
     remove_outliers,
-    create_largest_island_mask,
 )
+from mritk.testing import compare_nifti_images
 
 
 @pytest.mark.skip(reason="Takes too long")

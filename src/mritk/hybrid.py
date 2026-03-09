@@ -5,13 +5,13 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 import argparse
-from collections.abc import Callable
 import logging
-import numpy as np
-import skimage
-import nibabel
+from collections.abc import Callable
 from pathlib import Path
 
+import nibabel
+import numpy as np
+import skimage
 
 logger = logging.getLogger(__name__)
 

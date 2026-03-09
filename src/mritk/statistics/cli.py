@@ -1,6 +1,7 @@
 import argparse
 import typing
 from pathlib import Path
+
 import pandas as pd
 
 from ..segmentation.groups import default_segmentation_groups
@@ -19,8 +20,9 @@ def compute_mri_stats(
     info: str | None = None,
     **kwargs,
 ):
-    import sys
     import json
+    import sys
+
     from rich.console import Console
     from rich.panel import Panel
 
@@ -86,6 +88,7 @@ def compute_mri_stats(
 
 def get_stats_value(stats_file: Path, region: str, info: str, **kwargs):
     import sys
+
     from rich.console import Console
 
     # Setup Rich

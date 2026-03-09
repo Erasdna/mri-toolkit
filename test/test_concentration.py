@@ -10,13 +10,12 @@ import numpy as np
 
 import mritk.cli
 from mritk.concentration import (
-    concentration_from_T1_expr,
-    concentration_from_R1_expr,
-    compute_concentration_from_T1_array,
     compute_concentration_from_R1_array,
+    compute_concentration_from_T1_array,
+    concentration_from_R1_expr,
     concentration_from_T1,
+    concentration_from_T1_expr,
 )
-
 from mritk.testing import compare_nifti_images
 
 

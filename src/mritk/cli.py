@@ -1,24 +1,25 @@
 """MRI-toolkit provides a set of features dedicated to MRI data post-processing and analysis."""
 
+import argparse
 import logging
 from importlib.metadata import metadata
 from pathlib import Path
-import argparse
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
-from rich_argparse import RichHelpFormatter
 from rich.logging import RichHandler
+from rich_argparse import RichHelpFormatter
 
-from . import datasets, info, statistics, show, napari, looklocker, hybrid, mixed, r1, concentration
+from . import concentration, datasets, hybrid, info, looklocker, mixed, napari, r1, show, statistics
 
 
 def version_info():
-    from rich.console import Console
-    from rich.table import Table
-    from rich import box
     import sys
+
     import nibabel as nib
     import numpy as np
+    from rich import box
+    from rich.console import Console
+    from rich.table import Table
 
     console = Console()
 

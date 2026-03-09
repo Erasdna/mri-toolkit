@@ -4,9 +4,10 @@
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 # Copyright (C) 2026   Simula Research Laboratory
 
+from pathlib import Path
+
 import numpy as np
 import skimage
-from pathlib import Path
 
 from .data import MRIData
 from .testing import assert_same_space

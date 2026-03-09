@@ -4,17 +4,17 @@
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 # Copyright (C) 2026   Simula Research Laboratory
 
-from pathlib import Path
-import subprocess
-import shutil
+import logging
 import shlex
+import shutil
+import subprocess
+import warnings
+from pathlib import Path
+
 import numpy as np
 import scipy
 import skimage
-import warnings
-import logging
 from scipy.optimize import OptimizeWarning
-
 
 VOLUME_LABELS = [
     "IR-modulus",

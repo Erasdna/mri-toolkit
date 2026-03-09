@@ -2,9 +2,9 @@ import argparse
 from pathlib import Path
 
 import numpy as np
+from rich.columns import Columns
 from rich.console import Console
 from rich.panel import Panel
-from rich.columns import Columns
 
 # Assuming relative imports based on your previous file structure
 from .data import MRIData
@@ -59,8 +59,8 @@ def dispatch(args):
     in the terminal.
     """
     try:
-        from textual_image.renderable import Image as TermImage
         import PIL.Image
+        from textual_image.renderable import Image as TermImage
     except ImportError:
         console = Console()
         console.print(

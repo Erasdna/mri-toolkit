@@ -1,18 +1,18 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from pathlib import Path
 
 import mritk.cli
 from mritk.mixed import (
+    _extract_frame_metadata,
     compute_mixed_t1_array,
     extract_mixed_dicom,
     mixed_t1map,
     mixed_t1map_postprocessing,
-    _extract_frame_metadata,
 )
-from mritk.utils import VOLUME_LABELS
 from mritk.testing import compare_nifti_images
+from mritk.utils import VOLUME_LABELS
 
 
 def test_mixed_t1map(tmp_path, mri_data_dir: Path):

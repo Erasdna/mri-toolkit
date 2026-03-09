@@ -5,21 +5,20 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 import argparse
-from collections.abc import Callable
 import json
 import logging
+from collections.abc import Callable
 from pathlib import Path
 
+import nibabel
 import numpy as np
 import scipy
 import scipy.interpolate
 import skimage
-import nibabel
 
-
-from .data import data_reorientation, change_of_coordinates_map, MRIData
+from .data import MRIData, change_of_coordinates_map, data_reorientation
 from .masks import create_csf_mask
-from .utils import T1_lookup_table, VOLUME_LABELS, run_dcm2niix
+from .utils import VOLUME_LABELS, T1_lookup_table, run_dcm2niix
 
 logger = logging.getLogger(__name__)
 

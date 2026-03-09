@@ -5,12 +5,13 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 
+import re
 from pathlib import Path
+from typing import Optional
+
 import nibabel
 import numpy as np
 import numpy.typing as npt
-import re
-from typing import Optional
 
 
 class MRIData:

@@ -1,6 +1,7 @@
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Import your module
 import mritk.cli
