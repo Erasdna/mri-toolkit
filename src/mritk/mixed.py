@@ -18,7 +18,7 @@ import nibabel
 
 
 from .data import data_reorientation, change_of_coordinates_map, MRIData
-from .masking.masks import create_csf_mask
+from .masks import create_csf_mask
 from .utils import T1_lookup_table, VOLUME_LABELS, run_dcm2niix
 
 logger = logging.getLogger(__name__)
