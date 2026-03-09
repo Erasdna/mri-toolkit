@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-import mritk.data.orientation
+
+import mritk.data
 
 
 def test_apply_affine_identity():
@@ -8,7 +9,7 @@ def test_apply_affine_identity():
     points = np.array([[1.0, 2.0, 3.0], [10.0, 20.0, 30.0]])
     identity_affine = np.eye(4)
 
-    result = mritk.data.orientation.apply_affine(identity_affine, points)
+    result = mritk.data.apply_affine(identity_affine, points)
 
     np.testing.assert_array_equal(result, points)
 
@@ -22,7 +23,7 @@ def test_apply_affine_translation():
     affine[:3, 3] = translation
 
     expected = points + translation
-    result = mritk.data.orientation.apply_affine(affine, points)
+    result = mritk.data.apply_affine(affine, points)
 
     np.testing.assert_array_almost_equal(result, expected)
 
@@ -34,7 +35,7 @@ def test_apply_affine_scaling():
     affine = np.diag([2.0, 0.5, -1.0, 1.0])
 
     expected = np.array([[2.0, 1.0, -3.0]])
-    result = mritk.data.orientation.apply_affine(affine, points)
+    result = mritk.data.apply_affine(affine, points)
 
     np.testing.assert_array_almost_equal(result, expected)
 
@@ -57,7 +58,7 @@ def test_physical_to_voxel_indices_basic_translation():
     # 11 - 10 = 1
     expected = np.array([[0, 0, 0], [1, 1, 1]])
 
-    result = mritk.data.orientation.physical_to_voxel_indices(dof_coords, affine, round_coords=True)
+    result = mritk.data.physical_to_voxel_indices(dof_coords, affine, round_coords=True)
 
     np.testing.assert_array_equal(result, expected)
     assert result.dtype == int
@@ -68,7 +69,7 @@ def test_physical_to_voxel_indices_no_rounding():
     dof_coords = np.array([[10.5, 10.5, 10.5]])
     affine = np.eye(4)  # Identity
 
-    result = mritk.data.orientation.physical_to_voxel_indices(dof_coords, affine, round_coords=False)
+    result = mritk.data.physical_to_voxel_indices(dof_coords, affine, round_coords=False)
 
     np.testing.assert_array_almost_equal(result, dof_coords)
     assert np.issubdtype(result.dtype, np.floating)
@@ -82,7 +83,7 @@ def test_physical_to_voxel_indices_rounding_behavior():
 
     expected = np.array([[10, 10, 10], [11, 11, 11]])
 
-    result = mritk.data.orientation.physical_to_voxel_indices(dof_coords, affine, round_coords=True)
+    result = mritk.data.physical_to_voxel_indices(dof_coords, affine, round_coords=True)
     np.testing.assert_array_equal(result, expected)
 
 
@@ -97,7 +98,7 @@ def test_find_nearest_valid_voxels_1_neighbor():
     dof_inds = np.array([[0.1, 0.1], [4.9, 4.9]])
 
     # Function output shape is (ndim, N_neighbors, N_points)
-    result = mritk.data.orientation.find_nearest_valid_voxels(dof_inds, mask, k=1)
+    result = mritk.data.find_nearest_valid_voxels(dof_inds, mask, k=1)
 
     # Verify shape: (2 dims, 1 neighbor, 2 query points)
     assert result.shape == (2, 1, 2)
@@ -120,7 +121,7 @@ def test_find_nearest_valid_voxels_N_neighbors():
     # Query point right next to the cluster at (1,1,1)
     dof_inds = np.array([[1.0, 1.0, 1.1]])
 
-    result = mritk.data.orientation.find_nearest_valid_voxels(dof_inds, mask, k=2)
+    result = mritk.data.find_nearest_valid_voxels(dof_inds, mask, k=2)
 
     # Shape should be (3 dims, 2 neighbors, 1 point)
     assert result.shape == (3, 2, 1)
@@ -143,4 +144,4 @@ def test_find_nearest_valid_voxels_empty_mask_error():
     dof_inds = np.array([[1, 1]])
 
     with pytest.raises(ValueError):
-        mritk.data.orientation.find_nearest_valid_voxels(dof_inds, mask, k=1)
+        mritk.data.find_nearest_valid_voxels(dof_inds, mask, k=1)

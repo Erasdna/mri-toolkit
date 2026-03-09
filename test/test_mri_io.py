@@ -6,7 +6,8 @@ Copyright (C) 2026   Simula Research Laboratory
 """
 
 import numpy as np
-from mritk.data.io import load_mri_data, save_mri_data
+
+from mritk.data import MRIData
 
 
 def test_mri_io_nifti(tmp_path, mri_data_dir):
@@ -14,5 +15,5 @@ def test_mri_io_nifti(tmp_path, mri_data_dir):
 
     output_file = tmp_path / "output_nifti.nii.gz"
 
-    mri = load_mri_data(input_file, dtype=np.single, orient=False)  ## TODO : Test orient=True case
-    save_mri_data(mri, output_file, dtype=np.single)
+    mri = MRIData.from_file(input_file, dtype=np.single, orient=False)  ## TODO : Test orient=True case
+    mri.save(output_file, dtype=np.single)

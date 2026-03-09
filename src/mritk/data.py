@@ -1,13 +1,74 @@
-# MRI Data orientation Module
+# MRI Data Base class and functions Module
 
 # Copyright (C) 2026   Jørgen Riseth (jnriseth@gmail.com)
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 # Copyright (C) 2026   Simula Research Laboratory
 
 
-import numpy as np
+import re
+from pathlib import Path
+from typing import Optional
 
-from .base import MRIData
+import nibabel
+import numpy as np
+import numpy.typing as npt
+
+
+class MRIData:
+    def __init__(self, data: np.ndarray, affine: np.ndarray):
+        self.data = data
+        self.affine = affine
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        return self.data.shape
+
+    @classmethod
+    def from_file(cls, path: Path | str, dtype: npt.DTypeLike | None = None, orient: bool = True) -> "MRIData":
+        suffix_regex = re.compile(r".+(?P<suffix>(\.nii(\.gz|)|\.mg(z|h)))")
+        m = suffix_regex.match(Path(path).name)
+        if (m is not None) and (m.groupdict()["suffix"] in (".nii", ".nii.gz")):
+            mri = nibabel.nifti1.load(path)
+        elif (m is not None) and (m.groupdict()["suffix"] in (".mgz", ".mgh")):
+            mri = nibabel.freesurfer.mghformat.load(path)
+        else:
+            raise ValueError(f"Invalid suffix {path}, should be either '.nii', or '.mgz'")
+
+        affine = mri.affine
+        if affine is None:
+            raise RuntimeError("MRI do not contain affine")
+
+        kwargs = {}
+        if dtype is not None:
+            kwargs["dtype"] = dtype
+        data = np.asarray(mri.get_fdata("unchanged"), **kwargs)
+
+        mri = cls(data=data, affine=affine)
+
+        if orient:
+            return data_reorientation(mri)
+        else:
+            return mri
+
+    def save(self, path: Path | str, dtype: npt.DTypeLike | None = None, intent_code: Optional[int] = None):
+        if dtype is None:
+            dtype = self.data.dtype
+        data = self.data.astype(dtype)
+
+        suffix_regex = re.compile(r".+(?P<suffix>(\.nii(\.gz|)|\.mg(z|h)))")
+        m = suffix_regex.match(Path(path).name)
+        if (m is not None) and (m.groupdict()["suffix"] in (".nii", ".nii.gz")):
+            nii = nibabel.nifti1.Nifti1Image(data, self.affine)
+            if intent_code is not None:
+                nii.header.set_intent(intent_code)
+            nibabel.nifti1.save(nii, path)
+        elif (m is not None) and (m.groupdict()["suffix"] in (".mgz", ".mgh")):
+            mgh = nibabel.freesurfer.mghformat.MGHImage(data, self.affine)
+            if intent_code is not None:
+                mgh.header.set_intent(intent_code)
+            nibabel.freesurfer.mghformat.save(mgh, path)
+        else:
+            raise ValueError(f"Invalid suffix {path}, should be either '.nii', or '.mgz'")
 
 
 def physical_to_voxel_indices(physical_coordinates: np.ndarray, affine: np.ndarray, round_coords: bool = True) -> np.ndarray:
@@ -182,31 +243,3 @@ def change_of_coordinates_map(orientation_in: str, orientation_out: str) -> np.n
     P = np.eye(4)
     P[:, :3] = P[:, index_order]
     return P @ F
-
-
-def assert_same_space(mri1: MRIData, mri2: MRIData, rtol: float = 1e-5):
-    """Assert that two MRI datasets share the same physical space.
-
-    Checks if the data shapes are identical and if the affine transformation
-    matrices are close within a specified relative tolerance.
-
-    Args:
-        mri1: The first MRI data object.
-        mri2: The second MRI data object.
-        rtol: Relative tolerance for comparing affine matrices. Defaults to 1e-5.
-
-    Raises:
-        ValueError: If shapes differ or if affine matrices are not sufficiently close.
-    """
-    if mri1.data.shape == mri2.data.shape and np.allclose(mri1.affine, mri2.affine, rtol):
-        return
-    with np.printoptions(precision=5):
-        err = np.nanmax(np.abs((mri1.affine - mri2.affine) / mri2.affine))
-        msg = (
-            f"MRI's not in same space (relative tolerance {rtol})."
-            f" Shapes: ({mri1.data.shape}, {mri2.data.shape}),"
-            f" Affines: {mri1.affine}, {mri2.affine},"
-            f" Affine max relative error: {err}"
-        )
-
-        raise ValueError(msg)
