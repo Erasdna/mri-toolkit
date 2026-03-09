@@ -77,12 +77,12 @@ def setup_parser():
     looklocker_parser = subparsers.add_parser(
         "looklocker", help="Process Look-Locker data", formatter_class=parser.formatter_class
     )
-    looklocker.add_arguments(looklocker_parser)
+    looklocker.add_arguments(looklocker_parser, extra_args_cb=add_extra_arguments)
 
     hybrid_parser = subparsers.add_parser(
         "hybrid", help="Generate a hybrid T1 map by merging Look-Locker and Mixed maps.", formatter_class=parser.formatter_class
     )
-    hybrid.add_arguments(hybrid_parser)
+    hybrid.add_arguments(hybrid_parser, extra_args_cb=add_extra_arguments)
 
     mixed_parser = subparsers.add_parser(
         "mixed", help="Generate a Mixed T1 map from Look-Locker data.", formatter_class=parser.formatter_class

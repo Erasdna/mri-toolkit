@@ -4,7 +4,8 @@
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 # Copyright (C) 2026   Simula Research Laboratory
 
-
+import argparse
+from collections.abc import Callable
 import logging
 import numpy as np
 import tempfile
@@ -34,6 +35,7 @@ def read_dicom_trigger_times(dicomfile: Path) -> np.ndarray:
         np.ndarray: A sorted array of unique trigger delay times (in milliseconds)
         extracted from the CardiacSynchronizationSequence.
     """
+    logger.info(f"Reading DICOM trigger times from {dicomfile}.")
     import pydicom
 
     dcm = pydicom.dcmread(dicomfile)
@@ -56,6 +58,7 @@ def remove_outliers(data: np.ndarray, mask: np.ndarray, t1_low: float, t1_high: 
     Returns:
         np.ndarray: A cleaned 3D array with outliers and unmasked regions set to NaN.
     """
+    logger.info("Removing outliers from T1 map with physiological range [%f, %f].", t1_low, t1_high)
     processed = data.copy()
     processed[~mask] = np.nan
     outliers = (processed < t1_low) | (processed > t1_high)
@@ -76,6 +79,7 @@ def create_largest_island_mask(data: np.ndarray, radius: int = 10, erode_dilate_
     Returns:
         np.ndarray: A boolean 3D mask of the largest contiguous island.
     """
+    logger.info("Creating largest island mask with dilation radius %d and erosion factor %.2f.", radius, erode_dilate_factor)
     mask = skimage.measure.label(np.isfinite(data))
     regions = skimage.measure.regionprops(mask)
     if not regions:
@@ -90,6 +94,7 @@ def create_largest_island_mask(data: np.ndarray, radius: int = 10, erode_dilate_
         skimage.morphology.remove_small_holes(mask, area_threshold=10 ** (mask.ndim), connectivity=2, out=mask)
     skimage.morphology.dilation(mask, skimage.morphology.ball(radius), out=mask)
     skimage.morphology.erosion(mask, skimage.morphology.ball(erode_dilate_factor * radius), out=mask)
+    logger.debug(f"Generated final mask with shape {mask.shape} and {mask.sum()} valid voxels.")
     return mask
 
 
@@ -106,9 +111,12 @@ def compute_looklocker_t1_array(data: np.ndarray, time_s: np.ndarray, t1_roof: f
         np.ndarray: 3D numpy array representing the T1 map in milliseconds. Voxels
         that fail to fit or fall outside the mask are set to NaN.
     """
+    logger.info("Computing Look-Locker T1 map from 4D data with shape %s and trigger times %s.", data.shape, time_s)
     assert len(data.shape) >= 4, f"Data should be at least 4-dimensional, got shape {data.shape}"
     mask = mri_facemask(data[..., 0])
+    logger.debug(f"Generated face mask with shape {mask.shape} and {mask.sum()} valid voxels.")
     valid_voxels = (np.nanmax(data, axis=-1) > 0) & mask
+    logger.debug(f"Identified {valid_voxels.sum()} valid voxels for fitting after applying mask and signal threshold.")
 
     data_normalized = np.nan * np.zeros_like(data)
     # Prevent divide by zero warnings dynamically
@@ -118,6 +126,7 @@ def compute_looklocker_t1_array(data: np.ndarray, time_s: np.ndarray, t1_roof: f
     voxel_mask = np.array(np.where(valid_voxels)).T
     d_masked = np.array([data_normalized[i, j, k] for (i, j, k) in voxel_mask])
 
+    logger.debug(f"Starting fitting for {len(d_masked)} voxels.")
     with tqdm.tqdm(total=len(d_masked), desc="Fitting Look-Locker Voxels") as pbar:
         voxel_fitter = partial(fit_voxel, time_s, pbar)
         vfunc = np.vectorize(voxel_fitter, signature="(n) -> (3)")
@@ -176,11 +185,15 @@ def looklocker_t1map_postprocessing(
         removal are iteratively filled using a specialized Gaussian filter that
         interpolates from surrounding valid tissue without blurring the edges.
     """
+    logger.info(f"Post-processing Look-Locker T1 map at {T1map} with T1 range [{T1_low}, {T1_high}] ms.")
     t1map_mri = MRIData.from_file(T1map, dtype=np.single)
     t1map_data = t1map_mri.data.copy()
 
     if mask is None:
+        logger.debug("No mask provided, generating automatic mask based on the largest contiguous tissue island.")
         mask = create_largest_island_mask(t1map_data, radius, erode_dilate_factor)
+    else:
+        logger.debug("Using provided mask for post-processing.")
 
     t1map_data = remove_outliers(t1map_data, mask, T1_low, T1_high)
 
@@ -189,6 +202,7 @@ def looklocker_t1map_postprocessing(
 
     # Fill internal missing values iteratively using a Gaussian filter
     fill_mask = np.isnan(t1map_data) & mask
+    logger.debug(f"Initial fill mask has {fill_mask.sum()} voxels.")
     while fill_mask.sum() > 0:
         logger.info(f"Filling in {fill_mask.sum()} voxels within the mask.")
         t1map_data[fill_mask] = nan_filter_gaussian(t1map_data, 1.0)[fill_mask]
@@ -197,6 +211,9 @@ def looklocker_t1map_postprocessing(
     processed_T1map = MRIData(t1map_data, t1map_mri.affine)
     if output is not None:
         processed_T1map.save(output, dtype=np.single)
+        logger.info(f"Post-processed Look-Locker T1 map saved to {output}.")
+    else:
+        logger.info("No output path provided, returning post-processed Look-Locker T1 map as MRIData object.")
 
     return processed_T1map
 
@@ -220,15 +237,19 @@ def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path | No
         MRIData: An MRIData object containing the computed 3D T1 map (in milliseconds)
         and the original affine transformation matrix.
     """
+    logger.info(f"Generating T1 map from Look-Locker data at {looklocker_input} with trigger times from {timestamps}.")
     ll_mri = MRIData.from_file(looklocker_input, dtype=np.single)
     # Convert timestamps from milliseconds to seconds
     time_s = np.loadtxt(timestamps) / 1000.0
-
+    logger.debug(f"Loaded trigger times: {time_s}.")
     t1map_array = compute_looklocker_t1_array(ll_mri.data, time_s)
     t1map_mri = MRIData(t1map_array.astype(np.single), ll_mri.affine)
 
     if output is not None:
         t1map_mri.save(output, dtype=np.single)
+        logger.info(f"Look-Locker T1 map saved to {output}.")
+    else:
+        logger.info("No output path provided, returning Look-Locker T1 map as MRIData object.")
 
     return t1map_mri
 
@@ -244,14 +265,18 @@ def dicom_to_looklocker(dicomfile: Path, outpath: Path):
         dicomfile (Path): Path to the input DICOM file.
         outpath (Path): Desired output path for the converted .nii.gz file.
     """
+    logger.info(f"Converting Look-Locker DICOM {dicomfile} to NIfTI format at {outpath}")
     outdir, form = outpath.parent, outpath.stem
     outdir.mkdir(exist_ok=True, parents=True)
 
     # Extract and save trigger times
     times = read_dicom_trigger_times(dicomfile)
-    np.savetxt(outdir / f"{form}_trigger_times.txt", times)
+    trigger_file = outdir / f"{form}_trigger_times.txt"
+    logger.debug(f"Extracted trigger times: {times}. Saving to {trigger_file}")
+    np.savetxt(trigger_file, times)
 
     with tempfile.TemporaryDirectory(prefix=outpath.stem) as tmpdir:
+        logger.debug(f"Created temporary directory {tmpdir} for intermediate dcm2niix output.")
         tmppath = Path(tmpdir)
 
         # Delegate heavy lifting to dcm2niix
@@ -262,10 +287,17 @@ def dicom_to_looklocker(dicomfile: Path, outpath: Path):
 
         # Reload and save to standardize intent codes and precision
         mri = MRIData.from_file(tmppath / f"{form}.nii.gz", dtype=np.double)
+        logger.debug(f"Reloaded intermediate NIfTI file with shape {mri.data.shape} and dtype {mri.data.dtype}.")
         mri.save(outpath.with_suffix(".nii.gz"), dtype=np.single, intent_code=2001)
+        logger.info(
+            f"Final Look-Locker NIfTI saved to {outpath.with_suffix('.nii.gz')} with intent_code=2001 and dtype=np.single."
+        )
 
 
-def add_arguments(parser):
+def add_arguments(
+    parser: argparse.ArgumentParser,
+    extra_args_cb: Callable[[argparse.ArgumentParser], None] | None = None,
+) -> None:
     subparser = parser.add_subparsers(dest="looklocker-command", help="Commands for processing Look-Locker data")
 
     dicom_parser = subparser.add_parser(
@@ -295,6 +327,11 @@ def add_arguments(parser):
         default=1.3,
         help="Multiplier for the erosion radius relative to the dilation radius to ensure tight mask edges",
     )
+
+    if extra_args_cb is not None:
+        extra_args_cb(dicom_parser)
+        extra_args_cb(ll_t1)
+        extra_args_cb(ll_post)
 
 
 def dispatch(args):

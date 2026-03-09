@@ -4,7 +4,8 @@
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 # Copyright (C) 2026   Simula Research Laboratory
 
-
+import argparse
+from collections.abc import Callable
 import logging
 import numpy as np
 import skimage
@@ -69,7 +70,10 @@ def hybrid_t1map(
     return hybrid_nii
 
 
-def add_arguments(parser):
+def add_arguments(
+    parser: argparse.ArgumentParser,
+    extra_args_cb: Callable[[argparse.ArgumentParser], None] | None = None,
+) -> None:
     """Add command-line arguments for the hybrid T1 map generation."""
     parser.add_argument("-i", "--input-ll", type=Path, required=True, help="Path to the Look-Locker T1 map (NIfTI).")
     parser.add_argument("-m", "--input-mixed", type=Path, required=True, help="Path to the Mixed T1 map (NIfTI).")
@@ -77,6 +81,9 @@ def add_arguments(parser):
     parser.add_argument("-t", "--threshold", type=float, default=4000.0, help="T1 threshold in ms for substitution.")
     parser.add_argument("-e", "--erode", type=int, default=0, help="Number of voxels to erode the CSF mask.")
     parser.add_argument("-o", "--output", type=Path, required=True, help="Output path for the hybrid T1 map (NIfTI).")
+
+    if extra_args_cb is not None:
+        extra_args_cb(parser)
 
 
 def dispatch(args):
