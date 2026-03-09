@@ -79,19 +79,7 @@ hybrid
 statistics
 ----------
 
-.. automodule:: mritk.statistics
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.statistics.utils
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.statistics.compute_stats
-    :members:
-    :inherited-members:
-
-.. automodule:: mritk.statistics.cli
+.. automodule:: mritk.stats
     :members:
     :inherited-members:
 
