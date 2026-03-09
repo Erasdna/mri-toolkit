@@ -40,5 +40,18 @@ graph LR
 ## Example Command
 
 ```shell
-mritk hybrid -i path/to/ll_t1.nii.gz -m path/to/mixed_t1.nii.gz -c path/to/csf_mask.nii.gz -o path/to/hybrid_t1.nii.gz --threshold 1500.0
+mritk hybrid -l path/to/ll_t1.nii.gz -m path/to/mixed_t1.nii.gz -c path/to/csf_mask.nii.gz -o path/to/hybrid_t1.nii.gz --threshold 1500.0
+```
+
+
+Gonzo:
+
+```shell
+mritk hybrid \
+    -l gonzo/mri-processed/mri_processed_data/sub-01/registered/sub-01_ses-02_acq-looklocker_T1map_registered.nii.gz \
+    -m gonzo/mri-processed/mri_processed_data/sub-01/registered/sub-01_ses-02_acq-mixed_T1map_registered.nii.gz \
+    -c gonzo/mri-processed/mri_processed_data/sub-01/segmentations/sub-01_seg-csf_binary.nii.gz \
+    -o sub-01_ses-02_T1map_hybrid.nii.gz \
+    --threshold 1500 \
+    --erode 1
 ```
