@@ -6,9 +6,9 @@ Copyright (C) 2026   Simula Research Laboratory
 """
 
 from pathlib import Path
-
+import numpy as np
 from mritk.concentration.concentration import concentration
-
+from mritk.data.base import MRIData
 from mritk.t1_maps.utils import compare_nifti_images
 
 
@@ -29,5 +29,8 @@ def test_intracranial_concentration(tmp_path, mri_data_dir: Path):
     test_outputs = [tmp_path / f"output_ses-0{i}_concentration.nii.gz" for i in sessions]
 
     for i, s in enumerate(sessions):
-        concentration(input=images_path[i], reference=baseline_path, output=test_outputs[i], r1=r1, mask=mask_path)
+        T1_mri = MRIData.from_file(images_path[i], np.single)
+        T10_mri = MRIData.from_file(baseline_path, np.single)
+        mask = MRIData.from_file(mask_path, dtype=bool)
+        concentration(T1_mri=T1_mri, T10_mri=T10_mri, output=test_outputs[i], r1=r1, mask=mask)
         compare_nifti_images(test_outputs[i], ref_outputs[i], data_tolerance=1e-12)

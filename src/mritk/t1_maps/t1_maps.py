@@ -16,7 +16,6 @@ import json
 import scipy
 
 from ..data.base import MRIData
-from ..data.io import load_mri_data, save_mri_data
 from ..masking.masks import create_csf_mask
 from .utils import (
     mri_facemask,
@@ -26,8 +25,7 @@ from .utils import (
 )
 
 
-def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path | None = None) -> MRIData:
-    LL_mri = load_mri_data(looklocker_input, dtype=np.single)
+def looklocker_t1map(LL_mri: MRIData, timestamps: Path, output: Path | None = None) -> MRIData:
     D = LL_mri.data
     affine = LL_mri.affine
     t_data = np.loadtxt(timestamps) / 1000
@@ -59,13 +57,13 @@ def looklocker_t1map(looklocker_input: Path, timestamps: Path, output: Path | No
     T1map = np.minimum(T1map, T1_ROOF)
     T1map_mri = MRIData(T1map.astype(np.single), affine)
     if output is not None:
-        save_mri_data(T1map_mri, output, dtype=np.single)
+        T1map_mri.save_mri_data(output)
 
     return T1map_mri
 
 
 def looklocker_t1map_postprocessing(
-    T1map: Path,
+    T1map_mri: MRIData,
     T1_low: float,
     T1_high: float,
     radius: int = 10,
@@ -73,7 +71,6 @@ def looklocker_t1map_postprocessing(
     mask: Optional[np.ndarray] = None,
     output: Path | None = None,
 ) -> MRIData:
-    T1map_mri = load_mri_data(T1map, dtype=np.single)
     T1map_data = T1map_mri.data.copy()
     if mask is None:
         # Create mask for largest island.
@@ -106,16 +103,19 @@ def looklocker_t1map_postprocessing(
 
     processed_T1map = MRIData(T1map_data, T1map_mri.affine)
     if output is not None:
-        save_mri_data(processed_T1map, output, dtype=np.single)
+        processed_T1map.save_mri_data(output)
 
     return processed_T1map
 
 
 def mixed_t1map(
-    SE_nii_path: Path, IR_nii_path: Path, meta_path: Path, T1_low: float, T1_high: float, output: Path | None = None
+    SE: MRIData,
+    IR: MRIData,
+    meta_path: Path,
+    T1_low: float,
+    T1_high: float,
+    output: Path | None = None,
 ) -> nibabel.nifti1.Nifti1Image:
-    SE = load_mri_data(SE_nii_path, dtype=np.single)
-    IR = load_mri_data(IR_nii_path, dtype=np.single)
     with open(meta_path, "r") as f:
         meta = json.load(f)
 
@@ -137,10 +137,9 @@ def mixed_t1map(
     return nii
 
 
-def mixed_t1map_postprocessing(SE_nii_path: Path, T1_path: Path, output: Path | None = None) -> nibabel.nifti1.Nifti1Image:
+def mixed_t1map_postprocessing(SE_mri: MRIData, T1_path: Path, output: Path | None = None) -> nibabel.nifti1.Nifti1Image:
     T1map_nii = nibabel.nifti1.load(T1_path)
 
-    SE_mri = load_mri_data(SE_nii_path, np.single)
     mask = create_csf_mask(SE_mri.data, use_li=True)
     mask = skimage.morphology.erosion(mask)
 
@@ -154,8 +153,14 @@ def mixed_t1map_postprocessing(SE_nii_path: Path, T1_path: Path, output: Path | 
     return masked_T1map_nii
 
 
+# TODO: Migrate this to MRIData class
 def hybrid_t1map(
-    LL_path: Path, mixed_path: Path, csf_mask_path: Path, threshold: float, erode: int = 0, output: Path | None = None
+    LL_path: Path,
+    mixed_path: Path,
+    csf_mask_path: Path,
+    threshold: float,
+    erode: int = 0,
+    output: Path | None = None,
 ) -> nibabel.nifti1.Nifti1Image:
     mixed_mri = nibabel.nifti1.load(mixed_path)
     mixed = mixed_mri.get_fdata()

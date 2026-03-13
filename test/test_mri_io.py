@@ -12,7 +12,7 @@ from mritk.segmentation.segmentation import Segmentation
 
 
 def test_mri_io_nifti(tmp_path, mri_data_dir):
-    input_file = mri_data_dir / "mri-dataset/mri_dataset/derivatives/sub-01/ses-01/sub-01_ses-01_acq-mixed_T1map.nii.gz"
+    input_file = mri_data_dir / "mri-processed/mri_processed_data/sub-01/T1maps/sub-01_ses-02_T1map_hybrid.nii.gz"
 
     output_file = tmp_path / "output_nifti.nii.gz"
 
@@ -21,20 +21,20 @@ def test_mri_io_nifti(tmp_path, mri_data_dir):
 
 
 def test_MRIData_io(tmp_path, mri_data_dir):
-    input_file = mri_data_dir / "mri-dataset/mri_dataset/derivatives/sub-01/ses-01/sub-01_ses-01_acq-mixed_T1map.nii.gz"
+    input_file = mri_data_dir / "mri-processed/mri_processed_data/sub-01/T1maps/sub-01_ses-02_T1map_hybrid.nii.gz"
 
     output_file = tmp_path / "output_mridata.nii.gz"
 
-    mri_data = MRIData.from_file(input_file, dtype=np.single)
+    mri_data = MRIData.from_file(input_file)
     mri_data.save_mri_data(output_file, intent_code=1006)
 
 
 def test_MRIData_io_invalid_suffix(tmp_path, mri_data_dir):
-    input_file = mri_data_dir / "mri-dataset/mri_dataset/derivatives/sub-01/ses-01/sub-01_ses-01_acq-mixed_T1map.nii.gz"
+    input_file = mri_data_dir / "mri-processed/mri_processed_data/sub-01/T1maps/sub-01_ses-02_T1map_hybrid.nii.gz"
 
     output_file = tmp_path / "output_mridata.invalid"
 
-    mri_data = MRIData.from_file(input_file, dtype=np.single)
+    mri_data = MRIData.from_file(input_file)
     try:
         mri_data.save_mri_data(output_file, intent_code=1006)
         assert False, "Expected ValueError for invalid suffix"
@@ -43,9 +43,9 @@ def test_MRIData_io_invalid_suffix(tmp_path, mri_data_dir):
 
 
 def test_load_mri_data_invalid_suffix(mri_data_dir):
-    input_file = mri_data_dir / "mri-dataset/mri_dataset/derivatives/sub-01/ses-01/sub-01_ses-01_acq-mixed_T1map.invalid"
+    input_file = mri_data_dir / "mri-processed/mri_processed_data/sub-01/T1maps/sub-01_ses-02_T1map_hybrid.invalid"
     try:
-        load_mri_data(input_file, dtype=np.single)
+        load_mri_data(input_file)
         assert False, "Expected ValueError for invalid suffix"
     except ValueError as e:
         assert str(e) == f"Invalid suffix {input_file}, should be either '.nii', or '.mgz'"

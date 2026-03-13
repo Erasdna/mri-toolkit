@@ -17,8 +17,8 @@ class MRIData:
         self.dtype = data.dtype
 
     @classmethod
-    def from_file(cls, filepath: Path):
-        data, affine = load_mri_data(filepath, np.float64)
+    def from_file(cls, filepath: Path, dtype: type = float):
+        data, affine = load_mri_data(filepath, dtype)
         return cls(data=data, affine=affine)
 
     def save_mri_data(self, save_path: Path, intent_code: int | None = None):

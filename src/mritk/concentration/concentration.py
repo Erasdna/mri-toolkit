@@ -10,7 +10,6 @@ from typing import Optional
 
 import numpy as np
 from ..data.base import MRIData
-from ..data.io import load_mri_data, save_mri_data
 from ..data.orientation import assert_same_space
 
 
@@ -25,20 +24,19 @@ def concentration_from_R1(R1: np.ndarray, R1_0: np.ndarray, r1: float) -> np.nda
 
 
 def concentration(
-    input: Path,
-    reference: Path,
+    T1_mri: MRIData,
+    T10_mri: MRIData,
     output: Optional[Path] = None,
     r1: float = 0.0045,
-    mask: Optional[Path] = None,
+    mask: Optional[MRIData] = None,
 ) -> MRIData:
-    T1_mri = load_mri_data(input, np.single)
-    T10_mri = load_mri_data(reference, np.single)
+    # T1_mri = load_mri_data(input, np.single)
+    # T10_mri = load_mri_data(reference, np.single)
     assert_same_space(T1_mri, T10_mri)
 
     if mask is not None:
-        mask_mri = load_mri_data(mask, bool)
-        assert_same_space(mask_mri, T10_mri)
-        mask_data = mask_mri.data * (T10_mri.data > 1e-10) * (T1_mri.data > 1e-10)
+        assert_same_space(mask, T10_mri)
+        mask_data = mask.data * (T10_mri.data > 1e-10) * (T1_mri.data > 1e-10)
         T1_mri.data *= mask_data
         T10_mri.data *= mask_data
     else:
@@ -50,5 +48,5 @@ def concentration(
     concentrations[mask_data] = concentration_from_T1(T1=T1_mri.data[mask_data], T1_0=T10_mri.data[mask_data], r1=r1)
     mri_data = MRIData(data=concentrations, affine=T10_mri.affine)
     if output is not None:
-        save_mri_data(mri_data, output, np.single)
+        mri_data.save_mri_data(output)
     return mri_data
