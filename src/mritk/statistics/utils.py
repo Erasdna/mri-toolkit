@@ -5,13 +5,12 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 
-import numpy as np
 from pathlib import Path
 import pandas as pd
 
 
-def voxel_count_to_ml_scale(affine: np.ndarray):
-    return 1e-3 * np.linalg.det(affine[:3, :3])
+# def voxel_count_to_ml_scale(affine: np.ndarray):
+#     return 1e-3 * np.linalg.det(affine[:3, :3])
 
 
 def find_timestamp(

@@ -5,7 +5,6 @@
 # Copyright (C) 2026   Simula Research Laboratory
 
 
-import re
 import os
 from pathlib import Path
 import pandas as pd
@@ -23,12 +22,21 @@ def read_lut(filename: Path | str | None) -> pd.DataFrame:
         if not filename.exists():
             url = "https://github.com/freesurfer/freesurfer/raw/dev/distribution/FreeSurferColorLUT.txt"
             urlretrieve(url, filename)
-    lut_regex = re.compile(
-        r"^(?P<label>\d+)\s+(?P<description>[_\da-zA-Z-]+)\s+(?P<R>\d+)\s+(?P<G>\d+)\s+(?P<B>\d+)\s+(?P<A>\d+)"
-    )
+    # lut_regex = re.compile(
+    #     r"^(?P<label>\d+)\s+(?P<description>[_\da-zA-Z-]+)\s+(?P<R>\d+)\s+(?P<G>\d+)\s+(?P<B>\d+)\s+(?P<A>\d+)"
+    # )
+    # with open(filename, "r") as f:
+    #     records = [lut_record(m) for m in map(lut_regex.match, f) if m is not None]
+    # return pd.DataFrame.from_records(records)
     with open(filename, "r") as f:
-        records = [lut_record(m) for m in map(lut_regex.match, f) if m is not None]
-    return pd.DataFrame.from_records(records)
+        return pd.read_csv(
+            f,
+            sep=r"\s+",
+            header=None,
+            names=["ID", "Label", "R", "G", "B", "A"],
+            index_col="ID",
+            comment="#",  # Skips comment lines if any exist
+        )
 
 
 def write_lut(filename: Path | str, table: pd.DataFrame):
@@ -37,15 +45,3 @@ def write_lut(filename: Path | str, table: pd.DataFrame):
         newtable[col] = (newtable[col] * 255).astype(int)
     newtable["A"] = 255 - (newtable["A"] * 255).astype(int)
     newtable.to_csv(filename, sep="\t", index=False, header=False)
-
-
-def lut_record(match: re.Match) -> dict[str, str | float]:
-    groupdict = match.groupdict()
-    return {
-        "label": int(groupdict["label"]),
-        "description": groupdict["description"],
-        "R": float(groupdict["R"]) / 255,
-        "G": float(groupdict["G"]) / 255,
-        "B": float(groupdict["B"]) / 255,
-        "A": 1.0 - float(groupdict["A"]) / 255,
-    }

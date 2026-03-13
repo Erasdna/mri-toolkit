@@ -2,6 +2,6 @@
 # Copyright (C) 2026   Cécile Daversin-Catty (cecile@simula.no)
 # Copyright (C) 2026   Simula Research Laboratory
 
-from . import utils, compute_stats, cli
+from . import utils, compute_stats, cli, stat_functions
 
-__all__ = ["utils", "compute_stats", "cli"]
+__all__ = ["utils", "compute_stats", "cli", "stat_functions"]

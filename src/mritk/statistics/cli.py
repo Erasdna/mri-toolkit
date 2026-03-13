@@ -3,20 +3,19 @@ import typing
 from pathlib import Path
 import pandas as pd
 
-from ..segmentation.groups import default_segmentation_groups
 from .compute_stats import generate_stats_dataframe
+from ..data.base import MRIData
+from ..segmentation.segmentation import Segmentation
+from .metadata import extract_metadata_from_bids
 
 
 def compute_mri_stats(
     segmentation: Path,
     mri: list[Path],
     output: Path,
-    timetable: Path | None = None,
-    timelabel: str | None = None,
-    seg_regex: str | None = None,
-    mri_regex: str | None = None,
     lut: Path | None = None,
     info: str | None = None,
+    use_bids_metadata: bool = False,
     **kwargs,
 ):
     import sys
@@ -40,6 +39,7 @@ def compute_mri_stats(
         console.print(f"[bold red]Error:[/bold red] Missing segmentation file: {segmentation}")
         sys.exit(1)
 
+    seg = Segmentation.from_file(segmentation)
     # Validate all MRI paths before starting
     for path in mri:
         if not path.exists():
@@ -51,19 +51,23 @@ def compute_mri_stats(
     # Loop through MRI paths
     console.print("[bold green]Processing MRIs...[/bold green]")
     for i, path in enumerate(mri):
-        # console.print(f"[blue]Processing MRI {i + 1}/{len(mri)}:[/blue] {path.name}")
+        if use_bids_metadata:
+            try:
+                bids_metadata = extract_metadata_from_bids(segmentation, path)
+            except Exception as e:
+                console.print(f"[bold red]Error extracting BIDS metadata:[/bold red] {e}")
+                sys.exit(1)
 
+            info_dict = (info_dict if info_dict else {}) | bids_metadata
+
+        mri_object = MRIData.from_file(path)  # Load MRI data
         try:
             # Call the logic function
+            # TODO: Add option to specify statistics to compute
             df = generate_stats_dataframe(
-                seg_path=segmentation,
-                mri_path=path,
-                timestamp_path=timetable,
-                timestamp_sequence=timelabel,
-                seg_pattern=seg_regex,
-                mri_data_pattern=mri_regex,
-                lut_path=lut,
-                info_dict=info_dict,
+                seg=seg,
+                mri=mri_object,
+                metadata=info_dict,
             )
             dataframes.append(df)
         except Exception as e:
@@ -84,7 +88,7 @@ def compute_mri_stats(
         console.print("[yellow]No dataframes generated.[/yellow]")
 
 
-def get_stats_value(stats_file: Path, region: str, info: str, **kwargs):
+def get_stats_value(stats_file: Path, ROI: int, statistic: str, **kwargs):
     """
     Replaces the @click.command('get') decorated function.
     """
@@ -94,51 +98,40 @@ def get_stats_value(stats_file: Path, region: str, info: str, **kwargs):
     # Setup Rich
     console = Console()
 
-    # Validate inputs
-    valid_regions = default_segmentation_groups().keys()
-    if region not in valid_regions:
-        console.print(f"[bold red]Error:[/bold red] Region '{region}' not found in default segmentation groups.")
-        sys.exit(1)
-
-    valid_infos = [
-        "sum",
-        "mean",
-        "median",
-        "std",
-        "min",
-        "max",
-        "PC1",
-        "PC5",
-        "PC25",
-        "PC75",
-        "PC90",
-        "PC95",
-        "PC99",
-    ]
-    if info not in valid_infos:
-        console.print(f"[bold red]Error:[/bold red] Info '{info}' is invalid. Choose from: {', '.join(valid_infos)}")
-        sys.exit(1)
-
+    # Verify that csv exists
     if not stats_file.exists():
         console.print(f"[bold red]Error:[/bold red] Stats file not found: {stats_file}")
         sys.exit(1)
 
     # Process
     try:
+        # Read csv
         df = pd.read_csv(stats_file, sep=";")
-        region_row = df.loc[df["description"] == region]
 
-        if region_row.empty:
-            console.print(f"[red]Region '{region}' not found in the stats file.[/red]")
+        # Verify that the requested statistic exists in the dataframe
+        valid_statistics = set(df["statistic"])
+        if statistic not in valid_statistics:
+            console.print(
+                f"[bold red]Error:[/bold red] Statistic '{statistic}' is invalid. Choose from: {', '.join(valid_statistics)}"
+            )
             sys.exit(1)
 
-        info_value = region_row[info].values[0]
+        # Verify that the requested ROI exists in the dataframe
+        valid_rois = set(df["ROI"])
+        if ROI not in valid_rois:
+            console.print(
+                f"[bold red]Error:[/bold red] ROI '{ROI}' not found in stats file. Valid ROIs: {', '.join(map(str, valid_rois))}"
+            )
+            sys.exit(1)
+
+        statistic_value = df.loc[(df["ROI"] == ROI) & (df["statistic"] == statistic), "value"]
 
         # Output
         console.print(
-            f"[bold cyan]{info}[/bold cyan] for [bold green]{region}[/bold green] = [bold white]{info_value}[/bold white]"
+            f"[bold cyan]{statistic}[/bold cyan] for ROI \
+                [bold green]{ROI}[/bold green] = [bold white]{statistic_value.item()}[/bold white]"
         )
-        return info_value
+        return statistic_value.item()  # Return as scalar
 
     except Exception as e:
         console.print(f"[bold red]Error reading stats file:[/bold red] {e}")
@@ -150,28 +143,50 @@ def add_arguments(parser: argparse.ArgumentParser):
 
     # --- Compute Command ---
     parser_compute = subparsers.add_parser("compute", help="Compute MRI statistics", formatter_class=parser.formatter_class)
-    parser_compute.add_argument("--segmentation", "-s", type=Path, required=True, help="Path to segmentation file")
-    parser_compute.add_argument("--mri", "-m", type=Path, nargs="+", required=True, help="Path to MRI data file(s)")
-    parser_compute.add_argument("--output", "-o", type=Path, required=True, help="Output CSV file path")
-    parser_compute.add_argument("--timetable", "-t", type=Path, help="Path to timetable file")
-    parser_compute.add_argument("--timelabel", "-l", dest="timelabel", type=str, help="Time label sequence")
     parser_compute.add_argument(
-        "--seg_regex",
-        "-sr",
-        dest="seg_regex",
-        type=str,
-        help="Regex pattern for segmentation filename",
+        "--segmentation",
+        "-s",
+        type=Path,
+        required=True,
+        help="Path to segmentation file",
     )
-    parser_compute.add_argument("--mri_regex", "-mr", dest="mri_regex", type=str, help="Regex pattern for MRI filename")
+    parser_compute.add_argument(
+        "--mri",
+        "-m",
+        type=Path,
+        nargs="+",
+        required=True,
+        help="Path to MRI data file(s)",
+    )
+    parser_compute.add_argument("--output", "-o", type=Path, required=True, help="Output CSV file path")
     parser_compute.add_argument("--lut", "-lt", dest="lut", type=Path, help="Path to Lookup Table")
-    parser_compute.add_argument("--info", "-i", type=str, help="Info dictionary as JSON string")
+    parser_compute.add_argument(
+        "--info",
+        "-i",
+        type=str,
+        help="Info dictionary as JSON string. \
+            If using --use_bids_metadata, overlapping fields will be overwritten by BIDS metadata extraction.",
+    )
+    parser_compute.add_argument(
+        "--use_bids_metadata",
+        "-b",
+        action="store_true",
+        help="Assumes file naming follows BIDS convention and extracts metadata accordingly.\
+            Checks that subject IDs match between segmentation and MRI data.",
+    )
     parser_compute.set_defaults(func=compute_mri_stats)
 
     # --- Get Command ---
     parser_get = subparsers.add_parser("get", help="Get specific stats value", formatter_class=parser.formatter_class)
     parser_get.add_argument("--stats_file", "-f", type=Path, required=True, help="Path to stats CSV file")
-    parser_get.add_argument("--region", "-r", type=str, required=True, help="Region description")
-    parser_get.add_argument("--info", "-i", type=str, required=True, help="Statistic to retrieve (mean, std, etc.)")
+    parser_get.add_argument("--ROI", "-r", type=int, required=True, help="Region of interest to extract")
+    parser_get.add_argument(
+        "--statistic",
+        "-s",
+        type=str,
+        required=True,
+        help="Statistic to retrieve (mean, std, etc.)",
+    )
     parser_get.set_defaults(func=get_stats_value)
 
 
