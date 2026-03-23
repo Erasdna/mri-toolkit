@@ -12,8 +12,8 @@ from mritk.segmentation import (
     Segmentation,
     default_segmentation_groups,
     lut_record,
-    read_lut,
-    resolve_lut_path,
+    read_freesurfer_lut,
+    resolve_freesurfer_lut_path,
     validate_lut_file,
     write_lut,
 )
@@ -110,31 +110,31 @@ def test_validate_lut_file_empty(tmp_path):
     assert validate_lut_file(empty_file) is False
 
 
-def test_resolve_lut_path_existing_invalid_raises_error(tmp_path):
+def test_resolve_freesurfer_lut_path_existing_invalid_raises_error(tmp_path):
     """Test that providing an existing but invalid file raises a ValueError."""
     invalid_file = tmp_path / "bad_lut.txt"
     invalid_file.write_text("Not a LUT file.")
 
     with pytest.raises(ValueError, match="invalid or corrupted"):
-        resolve_lut_path(invalid_file)
+        resolve_freesurfer_lut_path(invalid_file)
 
 
-def test_resolve_lut_path_custom_target_download(tmp_path):
+def test_resolve_freesurfer_lut_path_custom_target_download(tmp_path):
     """Test that missing custom files trigger a download to the specified custom path."""
     custom_target = tmp_path / "my_custom_folder" / "my_lut.txt"
 
     # File does not exist yet. It should be downloaded directly to `custom_target`
-    resolved_path = resolve_lut_path(custom_target)
+    resolved_path = resolve_freesurfer_lut_path(custom_target)
 
     assert resolved_path == custom_target
     assert custom_target.exists()
     assert validate_lut_file(custom_target) is True
 
 
-def test_resolve_lut_path_default_download(tmp_path):
+def test_resolve_freesurfer_lut_path_default_download(tmp_path):
     """Test that if no file is provided, it downloads to the default location."""
     with patch("os.environ", {}), patch("pathlib.Path.cwd", return_value=tmp_path):
-        resolved_path = resolve_lut_path(None)
+        resolved_path = resolve_freesurfer_lut_path(None)
 
         expected_target = tmp_path / "FreeSurferColorLUT.txt"
         assert resolved_path == expected_target
@@ -142,7 +142,7 @@ def test_resolve_lut_path_default_download(tmp_path):
         assert validate_lut_file(expected_target) is True
 
 
-def test_read_lut_file_io(tmp_path):
+def test_read_freesurfer_lut_file_io(tmp_path):
     """Test reading a real LUT file written to disk."""
     dummy_lut_file = tmp_path / "dummy_lut.txt"
     dummy_lut_file.write_text(
@@ -151,7 +151,7 @@ def test_read_lut_file_io(tmp_path):
         "3   Left-Cerebral-Cortex            205 62  78  0\n"
     )
 
-    df = read_lut(dummy_lut_file)
+    df = read_freesurfer_lut(dummy_lut_file)
 
     assert len(df) == 2
     assert df.iloc[0]["label"] == 2

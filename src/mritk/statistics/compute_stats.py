@@ -12,7 +12,7 @@ import pandas as pd
 import tqdm.rich
 
 from ..data import MRIData
-from ..segmentation import Segmentation, default_segmentation_groups, read_lut
+from ..segmentation import Segmentation, default_segmentation_groups, read_freesurfer_lut
 from ..testing import assert_same_space
 from .stat_functions import Mean, Median, Statistic, Std
 from .utils import find_timestamp, prepend_info, voxel_count_to_ml_scale
@@ -65,7 +65,7 @@ def get_regions_dictionary(seg_data: np.ndarray, lut_path: Path | None = None) -
     Returns:
         dict[str, list[int]]: Mapping of region names to a list of label integers.
     """
-    lut = read_lut(lut_path)
+    lut = read_freesurfer_lut(lut_path)
     seg_labels = np.unique(seg_data[seg_data != 0])
 
     lut_regions = lut.loc[lut.label.isin(seg_labels), ["label", "description"]].to_dict("records")
