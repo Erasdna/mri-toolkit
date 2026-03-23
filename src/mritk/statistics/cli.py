@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from ..data import MRIData
-from ..segmentation import Segmentation
+from ..segmentation import FreeSurferSegmentation
 from .compute_stats import generate_stats_dataframe_rois
 from .metadata import extract_metadata_from_bids
 
@@ -41,7 +41,7 @@ def compute_mri_stats(
         console.print(f"[bold red]Error:[/bold red] Missing segmentation file: {segmentation}")
         sys.exit(1)
 
-    seg = Segmentation.from_file(segmentation)
+    seg = FreeSurferSegmentation.from_file(segmentation)
     # Validate all MRI paths before starting
     for path in mri:
         if not path.exists():
